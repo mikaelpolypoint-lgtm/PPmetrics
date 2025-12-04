@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TEAMS_DEFAULT, PIS } from '../types';
 import type { Team, Topic, Feature, Story, EverhourEntry } from '../types';
+import { db } from '../lib/firebase';
+import { collection, getDocs, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 interface DataContextType {
     teams: Team[];
@@ -10,6 +12,7 @@ interface DataContextType {
     everhourEntries: EverhourEntry[];
     currentPI: string;
     setCurrentPI: (pi: string) => void;
+    isLoading: boolean;
 
     // Actions
     updateTeam: (team: Team) => void;
@@ -43,51 +46,130 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [features, setFeatures] = useState<Feature[]>([]);
     const [stories, setStories] = useState<Story[]>([]);
     const [everhourEntries, setEverhourEntries] = useState<EverhourEntry[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Load from local storage for persistence during dev
+    // Load data from Firestore
     useEffect(() => {
-        const saved = localStorage.getItem('metrics_data');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            setTeams(parsed.teams || TEAMS_DEFAULT);
-            setTopics(parsed.topics || []);
-            setFeatures(parsed.features || []);
-            setStories(parsed.stories || []);
-            setEverhourEntries(parsed.everhourEntries || []);
-        }
+        const loadData = async () => {
+            setIsLoading(true);
+            try {
+                // Teams
+                const teamsSnap = await getDocs(collection(db, 'teams'));
+                if (!teamsSnap.empty) {
+                    const loadedTeams = teamsSnap.docs.map(d => d.data() as Team);
+                    // Merge with defaults to ensure we have all teams if new ones were added to code
+                    // For now, just trust DB if it has data, or maybe merge? 
+                    // Let's just use DB data if present, otherwise defaults.
+                    // Actually, if DB is empty, we might want to initialize it? 
+                    // For now, let's just use what's in DB if it exists.
+                    if (loadedTeams.length > 0) setTeams(loadedTeams);
+                } else {
+                    // Initialize teams in DB if empty
+                    const batch = writeBatch(db);
+                    TEAMS_DEFAULT.forEach(t => {
+                        batch.set(doc(db, 'teams', t.id), t);
+                    });
+                    await batch.commit();
+                }
+
+                // Topics
+                const topicsSnap = await getDocs(collection(db, 'topics'));
+                setTopics(topicsSnap.docs.map(d => d.data() as Topic));
+
+                // Features
+                const featuresSnap = await getDocs(collection(db, 'features'));
+                setFeatures(featuresSnap.docs.map(d => d.data() as Feature));
+
+                // Stories
+                const storiesSnap = await getDocs(collection(db, 'stories'));
+                setStories(storiesSnap.docs.map(d => d.data() as Story));
+
+                // Everhour
+                const everhourSnap = await getDocs(collection(db, 'everhourEntries'));
+                setEverhourEntries(everhourSnap.docs.map(d => d.data() as EverhourEntry));
+
+            } catch (error) {
+                console.error("Error loading data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadData();
     }, []);
 
-    // Save to local storage
-    useEffect(() => {
-        localStorage.setItem('metrics_data', JSON.stringify({
-            teams, topics, features, stories, everhourEntries
-        }));
-    }, [teams, topics, features, stories, everhourEntries]);
-
-    const updateTeam = (updatedTeam: Team) => {
+    const updateTeam = async (updatedTeam: Team) => {
         setTeams(prev => prev.map(t => t.id === updatedTeam.id ? updatedTeam : t));
+        await setDoc(doc(db, 'teams', updatedTeam.id), updatedTeam);
     };
 
-    const addTopic = (topic: Topic) => setTopics(prev => [...prev, topic]);
-    const updateTopic = (topic: Topic) => setTopics(prev => prev.map(t => t.id === topic.id ? topic : t));
-    const deleteTopic = (id: string) => setTopics(prev => prev.filter(t => t.id !== id));
+    const addTopic = async (topic: Topic) => {
+        setTopics(prev => [...prev, topic]);
+        await setDoc(doc(db, 'topics', topic.id), topic);
+    };
 
-    const addFeature = (feature: Feature) => setFeatures(prev => [...prev, feature]);
-    const updateFeature = (feature: Feature) => setFeatures(prev => prev.map(f => f.id === feature.id ? feature : f));
-    const deleteFeature = (id: string) => setFeatures(prev => prev.filter(f => f.id !== id));
+    const updateTopic = async (topic: Topic) => {
+        setTopics(prev => prev.map(t => t.id === topic.id ? topic : t));
+        await setDoc(doc(db, 'topics', topic.id), topic);
+    };
 
-    const importStories = (newStories: Story[], pi: string) => {
-        // Replace stories for this PI or append? Usually import replaces or updates.
-        // Let's remove existing stories for this PI and add new ones to avoid duplicates if re-importing
+    const deleteTopic = async (id: string) => {
+        setTopics(prev => prev.filter(t => t.id !== id));
+        await deleteDoc(doc(db, 'topics', id));
+    };
+
+    const addFeature = async (feature: Feature) => {
+        setFeatures(prev => [...prev, feature]);
+        await setDoc(doc(db, 'features', feature.id), feature);
+    };
+
+    const updateFeature = async (feature: Feature) => {
+        setFeatures(prev => prev.map(f => f.id === feature.id ? feature : f));
+        await setDoc(doc(db, 'features', feature.id), feature);
+    };
+
+    const deleteFeature = async (id: string) => {
+        setFeatures(prev => prev.filter(f => f.id !== id));
+        await deleteDoc(doc(db, 'features', id));
+    };
+
+    const importStories = async (newStories: Story[], pi: string) => {
+        // Optimistic update
         setStories(prev => [...prev.filter(s => s.pi !== pi), ...newStories]);
+
+        // Batch write to Firestore
+        // First, delete existing stories for this PI? 
+        // Firestore doesn't have a "delete where" easily without cloud functions or client side loop.
+        // For now, we'll just overwrite/add. 
+        // Ideally we should delete old ones for this PI first to avoid stale data.
+        // Let's find IDs to delete from current state
+        const storiesToDelete = stories.filter(s => s.pi === pi);
+
+        const batch = writeBatch(db);
+        storiesToDelete.forEach(s => {
+            batch.delete(doc(db, 'stories', s.id));
+        });
+        newStories.forEach(s => {
+            batch.set(doc(db, 'stories', s.id), s);
+        });
+        await batch.commit();
     };
 
-    const importEverhour = (newEntries: EverhourEntry[], pi: string) => {
+    const importEverhour = async (newEntries: EverhourEntry[], pi: string) => {
         setEverhourEntries(prev => [...prev.filter(e => e.pi !== pi), ...newEntries]);
+
+        const entriesToDelete = everhourEntries.filter(e => e.pi === pi);
+        const batch = writeBatch(db);
+        entriesToDelete.forEach(e => {
+            batch.delete(doc(db, 'everhourEntries', e.id));
+        });
+        newEntries.forEach(e => {
+            batch.set(doc(db, 'everhourEntries', e.id), e);
+        });
+        await batch.commit();
     };
 
-    const seedTestData = () => {
-        // Generate some test data for 26.1
+    const seedTestData = async () => {
         const pi = '26.1';
 
         const newTopics: Topic[] = [
@@ -114,15 +196,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             { id: 's2', name: 'Design Dashboard', key: 'PROJ-102', status: 'In Progress', sp: 8, team: 'Tungsten', sprint: '26.1-S2', pi }
         ];
 
-        setTopics(newTopics);
-        setFeatures(newFeatures);
-        setStories(newStories);
-        alert('Test data seeded for 26.1');
+        // Update State
+        setTopics(prev => [...prev.filter(t => t.pi !== pi), ...newTopics]);
+        setFeatures(prev => [...prev.filter(f => f.pi !== pi), ...newFeatures]);
+        setStories(prev => [...prev.filter(s => s.pi !== pi), ...newStories]);
+
+        // Batch Write
+        const batch = writeBatch(db);
+        newTopics.forEach(t => batch.set(doc(db, 'topics', t.id), t));
+        newFeatures.forEach(f => batch.set(doc(db, 'features', f.id), f));
+        newStories.forEach(s => batch.set(doc(db, 'stories', s.id), s));
+
+        await batch.commit();
+        alert('Test data seeded for 26.1 to Firestore');
     };
 
     return (
         <DataContext.Provider value={{
-            teams, topics, features, stories, everhourEntries, currentPI, setCurrentPI,
+            teams, topics, features, stories, everhourEntries, currentPI, setCurrentPI, isLoading,
             updateTeam, addTopic, updateTopic, deleteTopic, addFeature, updateFeature, deleteFeature,
             importStories, importEverhour, seedTestData
         }}>

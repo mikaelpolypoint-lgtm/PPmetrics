@@ -1,24 +1,15 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
-// TODO: Replace with your Firebase config
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyD-JDc9MVG9GlEkKNV3SA8hKUPo680Hu4Y",
+    authDomain: "metrics-96e88.firebaseapp.com",
+    projectId: "metrics-96e88",
+    storageBucket: "metrics-96e88.firebasestorage.app",
+    messagingSenderId: "168553491984",
+    appId: "1:168553491984:web:6e5471c21e9e7b555aa495",
+    measurementId: "G-KVYJ8EHK21"
 };
 
-// Initialize Firebase only if config is present (to avoid errors during dev without config)
-// For now we will use a mock store if this fails or is not configured
-let db: any;
-try {
-    const app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-} catch (e) {
-    console.warn("Firebase not configured yet.");
-}
-
-export { db };
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
