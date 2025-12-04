@@ -3,6 +3,7 @@ import { TEAMS_DEFAULT, PIS } from '../types';
 import type { Team, Topic, Feature, Story, EverhourEntry } from '../types';
 import { db } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { TEST_JIRA_DATA } from '../data/testJiraData';
 
 interface DataContextType {
     teams: Team[];
@@ -29,6 +30,7 @@ interface DataContextType {
 
     // Test Data
     seedTestData: () => void;
+    loadTestJiraData: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -57,11 +59,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 const teamsSnap = await getDocs(collection(db, 'teams'));
                 if (!teamsSnap.empty) {
                     const loadedTeams = teamsSnap.docs.map(d => d.data() as Team);
-                    // Merge with defaults to ensure we have all teams if new ones were added to code
-                    // For now, just trust DB if it has data, or maybe merge? 
-                    // Let's just use DB data if present, otherwise defaults.
-                    // Actually, if DB is empty, we might want to initialize it? 
-                    // For now, let's just use what's in DB if it exists.
                     if (loadedTeams.length > 0) setTeams(loadedTeams);
                 } else {
                     // Initialize teams in DB if empty
@@ -138,11 +135,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setStories(prev => [...prev.filter(s => s.pi !== pi), ...newStories]);
 
         // Batch write to Firestore
-        // First, delete existing stories for this PI? 
-        // Firestore doesn't have a "delete where" easily without cloud functions or client side loop.
-        // For now, we'll just overwrite/add. 
-        // Ideally we should delete old ones for this PI first to avoid stale data.
-        // Let's find IDs to delete from current state
         const storiesToDelete = stories.filter(s => s.pi === pi);
 
         const batch = writeBatch(db);
@@ -192,8 +184,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ];
 
         const newStories: Story[] = [
-            { id: 's1', name: 'Implement Login', key: 'PROJ-101', status: 'Done', sp: 5, team: 'Neon', sprint: '26.1-S1', pi },
-            { id: 's2', name: 'Design Dashboard', key: 'PROJ-102', status: 'In Progress', sp: 8, team: 'Tungsten', sprint: '26.1-S2', pi }
+            { id: 's1', name: 'Implement Login', key: 'PROJ-101', status: 'Done', sp: 5, team: 'Neon', sprint: '26.1-S1', epic: 'TECH', pi },
+            { id: 's2', name: 'Design Dashboard', key: 'PROJ-102', status: 'In Progress', sp: 8, team: 'Tungsten', sprint: '26.1-S2', epic: 'TECH', pi }
         ];
 
         // Update State
@@ -211,11 +203,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         alert('Test data seeded for 26.1 to Firestore');
     };
 
+    const loadTestJiraData = async () => {
+        const pi = '26.1';
+        // Optimistic update
+        setStories(prev => [...prev.filter(s => s.pi !== pi), ...TEST_JIRA_DATA]);
+
+        // Batch write
+        const batch = writeBatch(db);
+        // Delete existing for this PI first
+        const storiesToDelete = stories.filter(s => s.pi === pi);
+        storiesToDelete.forEach(s => batch.delete(doc(db, 'stories', s.id)));
+
+        TEST_JIRA_DATA.forEach(s => {
+            batch.set(doc(db, 'stories', s.id), s);
+        });
+
+        await batch.commit();
+        alert(`Imported ${TEST_JIRA_DATA.length} stories from local test file.`);
+    };
+
     return (
         <DataContext.Provider value={{
             teams, topics, features, stories, everhourEntries, currentPI, setCurrentPI, isLoading,
             updateTeam, addTopic, updateTopic, deleteTopic, addFeature, updateFeature, deleteFeature,
-            importStories, importEverhour, seedTestData
+            importStories, importEverhour, seedTestData, loadTestJiraData
         }}>
             {children}
         </DataContext.Provider>

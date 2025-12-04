@@ -6,7 +6,7 @@ import Papa from 'papaparse';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 
 const Jira: React.FC = () => {
-    const { stories, importStories, currentPI } = useData();
+    const { stories, importStories, currentPI, loadTestJiraData } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +41,7 @@ const Jira: React.FC = () => {
                         const sp = parseFloat(findVal(['Custom field (Story Points)', 'Story Points', 'SP'])) || 0;
                         const team = findVal(['Custom field (pdev_unit)', 'pdev_unit', 'Team']) || '';
                         const sprint = findVal(['Custom field (current Sprint)', 'current Sprint', 'Sprint']) || '';
+                        const epic = findVal(['Parent key', 'Parent', 'Epic Link', 'Custom field (Epic Link)']) || '';
 
                         if (!key) throw new Error("Could not find Issue Key in CSV row");
 
@@ -52,6 +53,7 @@ const Jira: React.FC = () => {
                             sp: sp,
                             team: team,
                             sprint: sprint,
+                            epic: epic,
                             pi: currentPI
                         };
                     });
@@ -90,6 +92,12 @@ const Jira: React.FC = () => {
                         >
                             <Upload size={18} /> Import CSV
                         </label>
+                        <button
+                            onClick={loadTestJiraData}
+                            className="btn btn-secondary flex items-center gap-2 ml-2"
+                        >
+                            <FileText size={18} /> Load Test Data
+                        </button>
                     </div>
                 }
             />
@@ -111,6 +119,7 @@ const Jira: React.FC = () => {
                             <th>SP</th>
                             <th>Team</th>
                             <th>Sprint</th>
+                            <th>Epic</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -126,11 +135,12 @@ const Jira: React.FC = () => {
                                 <td>{story.sp}</td>
                                 <td>{story.team}</td>
                                 <td>{story.sprint}</td>
+                                <td><span className="badge badge-accent">{story.epic}</span></td>
                             </tr>
                         ))}
                         {filteredStories.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="text-center py-8 text-secondary">
+                                <td colSpan={7} className="text-center py-8 text-secondary">
                                     <div className="flex flex-col items-center gap-3">
                                         <FileText size={48} style={{ opacity: 0.2 }} />
                                         <p>No stories imported for {currentPI}.</p>

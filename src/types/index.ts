@@ -35,6 +35,7 @@ export interface Story {
   sp: number;
   team: string; // Team Name from Jira
   sprint: string;
+  epic: string; // Parent key
   pi: string;
 }
 
