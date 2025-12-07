@@ -33,32 +33,43 @@
   --pp-yellow-500: #FFEE91;
   --pp-yellow-700: #E5C300;
 
-  /* Semantic Mapping (Light Theme) */
-  --bg-body: var(--pp-grey-200);
-  --bg-card: #FFFFFF;
-  --bg-panel: var(--pp-mint-100);
-  /* Subtle tint for panels/headers */
-  --bg-hover: var(--pp-grey-250);
+  /* Semantic Mapping (Dark Theme with Polypoint Colors) */
+  --bg-body: #0f172a;
+  /* Slate 900 */
+  --bg-card: #1e293b;
+  /* Slate 800 */
+  --bg-panel: #1e293b;
+  /* Slate 800 */
+  --bg-hover: #334155;
+  /* Slate 700 */
 
-  --text-primary: var(--pp-black);
-  --text-secondary: var(--pp-grey-750);
-  --text-muted: var(--pp-grey-500);
-  --text-inverse: #FFFFFF;
+  --text-primary: #f8fafc;
+  /* Slate 50 */
+  --text-secondary: #94a3b8;
+  /* Slate 400 */
+  --text-muted: #64748b;
+  /* Slate 500 */
+  --text-inverse: #0f172a;
 
-  --border: var(--pp-grey-300);
+  --border: #334155;
+  /* Slate 700 */
   --border-focus: var(--pp-mint-500);
 
-  --primary: var(--pp-mint-700);
-  --primary-hover: var(--pp-mint-830);
-  --primary-light: var(--pp-mint-200);
+  /* Use Lighter Shades for Dark Mode Visibility */
+  --primary: var(--pp-mint-500);
+  /* #7AB9C1 */
+  --primary-hover: var(--pp-mint-400);
+  /* #9AD0D7 */
+  --primary-light: rgba(122, 185, 193, 0.2);
 
-  --accent: var(--pp-blue-700);
-  --accent-hover: var(--pp-blue-900);
-  --accent-light: var(--pp-blue-200);
+  --accent: var(--pp-blue-500);
+  /* #5AB1E0 */
+  --accent-hover: var(--pp-blue-300);
+  /* #ADDDF7 */
+  --accent-light: rgba(90, 177, 224, 0.2);
 
   --success: var(--pp-green-default);
   --warning: var(--pp-yellow-700);
-  /* Darker for visibility on light bg */
   --danger: var(--pp-red-700);
 
   --radius-sm: 4px;
@@ -66,16 +77,17 @@
   --radius-lg: 12px;
   --radius-xl: 16px;
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.15);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(122, 185, 193, 0.15);
+  /* Mint glow */
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: var(--bg-app);
+  background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 40%);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
@@ -104,7 +116,7 @@ body {
 .main-content {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--bg-body);
+  background: radial-gradient(circle at top right, #1e293b 0%, #0f172a 40%);
 }
 
 /* ... (container styles unchanged) ... */
@@ -118,18 +130,19 @@ body {
 
 /* Components */
 .card {
-  background: var(--bg-card);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 1.5rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
   border-color: var(--border-focus);
 }
+
 
 .btn {
   display: inline-flex;
@@ -157,14 +170,14 @@ body {
 }
 
 .btn-secondary {
-  background: white;
+  background: transparent;
   border: 1px solid var(--border);
   color: var(--text-primary);
 }
 
 .btn-secondary:hover {
   background: var(--bg-hover);
-  border-color: var(--primary);
+  border-color: var(--text-secondary);
   color: var(--primary);
 }
 
@@ -188,15 +201,17 @@ tbody tr:hover {
 }
 
 .badge-primary {
-  background: var(--pp-mint-100);
+  background: rgba(122, 185, 193, 0.1);
+  /* Mint tint */
   color: var(--primary);
-  border-color: var(--pp-mint-200);
+  border-color: rgba(122, 185, 193, 0.2);
 }
 
 .badge-accent {
-  background: var(--pp-blue-200);
+  background: rgba(90, 177, 224, 0.1);
+  /* Blue tint */
   color: var(--accent);
-  border-color: var(--pp-blue-500);
+  border-color: rgba(90, 177, 224, 0.2);
 }
 
 /* Navigation */
@@ -215,11 +230,11 @@ tbody tr:hover {
 
 .nav-item:hover {
   background: var(--bg-hover);
-  color: var(--primary);
+  color: var(--text-primary);
 }
 
 .nav-item.active {
-  background: var(--pp-mint-100);
+  background: linear-gradient(90deg, rgba(122, 185, 193, 0.1), transparent);
   color: var(--primary);
   border-left: 3px solid var(--primary);
   border-radius: 0 8px 8px 0;
