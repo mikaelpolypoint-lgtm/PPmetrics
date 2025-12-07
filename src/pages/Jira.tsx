@@ -39,7 +39,10 @@ const Jira: React.FC = () => {
                         const key = findVal(['Key', 'Issue key', 'ID']) || '';
                         const status = findVal(['Status']) || '';
                         const sp = parseFloat(findVal(['Custom field (Story Points)', 'Story Points', 'SP'])) || 0;
-                        const team = findVal(['Custom field (pdev_unit)', 'pdev_unit', 'Team']) || '';
+                        let team = findVal(['Custom field (pdev_unit)', 'pdev_unit', 'Team']) || '';
+
+                        // Team Name Mapping
+                        if (team === 'Hydrogen 1') team = 'H1';
                         const sprint = findVal(['Custom field (current Sprint)', 'current Sprint', 'Sprint']) || '';
                         const epic = findVal(['Parent key', 'Parent', 'Epic Link', 'Custom field (Epic Link)']) || '';
                         const epicSummary = findVal(['Parent summary', 'Parent Summary']) || epic; // Fallback to key if summary missing
