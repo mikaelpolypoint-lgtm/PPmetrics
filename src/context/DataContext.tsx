@@ -26,6 +26,7 @@ interface DataContextType {
 
     // Bulk Import Actions
     importStories: (stories: Story[], pi: string) => void;
+    importFeatures: (features: Feature[]) => void;
     importEverhour: (entries: EverhourEntry[], pi: string) => void;
 
     // Test Data
@@ -147,6 +148,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await batch.commit();
     };
 
+    const importFeatures = async (newFeatures: Feature[]) => {
+        // We want to merge, not replace all features, because features might be created manually too.
+
+        // Let's just use setDoc with merge: true implicitly by overwriting or checking existence.
+
+        setFeatures(prev => {
+            // A simple approach: Filter out existing features that match IDs of new features, then append new ones.
+            const newIds = new Set(newFeatures.map(f => f.id));
+            return [...prev.filter(f => !newIds.has(f.id)), ...newFeatures];
+        });
+
+        const batch = writeBatch(db);
+        newFeatures.forEach(f => {
+            batch.set(doc(db, 'features', f.id), f);
+        });
+        await batch.commit();
+    };
+
     const importEverhour = async (newEntries: EverhourEntry[], pi: string) => {
         setEverhourEntries(prev => [...prev.filter(e => e.pi !== pi), ...newEntries]);
 
@@ -226,7 +245,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         <DataContext.Provider value={{
             teams, topics, features, stories, everhourEntries, currentPI, setCurrentPI, isLoading,
             updateTeam, addTopic, updateTopic, deleteTopic, addFeature, updateFeature, deleteFeature,
-            importStories, importEverhour, seedTestData, loadTestJiraData
+            importStories, importFeatures, importEverhour, seedTestData, loadTestJiraData
         }}>
             {children}
         </DataContext.Provider>

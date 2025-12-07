@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
-import type { Story } from '../types';
+import type { Story, Feature } from '../types';
 import Papa from 'papaparse';
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 
 const Jira: React.FC = () => {
-    const { stories, importStories, currentPI, loadTestJiraData } = useData();
+    const { stories, importStories, importFeatures, currentPI, loadTestJiraData } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +42,7 @@ const Jira: React.FC = () => {
                         const team = findVal(['Custom field (pdev_unit)', 'pdev_unit', 'Team']) || '';
                         const sprint = findVal(['Custom field (current Sprint)', 'current Sprint', 'Sprint']) || '';
                         const epic = findVal(['Parent key', 'Parent', 'Epic Link', 'Custom field (Epic Link)']) || '';
+                        const epicSummary = findVal(['Parent summary', 'Parent Summary']) || epic; // Fallback to key if summary missing
 
                         if (!key) throw new Error("Could not find Issue Key in CSV row");
 
@@ -54,19 +55,47 @@ const Jira: React.FC = () => {
                             team: team,
                             sprint: sprint,
                             epic: epic,
+                            epicSummary: epicSummary, // Temp field for extraction
                             pi: currentPI
                         };
                     });
 
-                    importStories(parsedStories, currentPI);
+                    // Extract Features
+                    const uniqueEpics = new Map<string, string>();
+                    parsedStories.forEach((s: any) => {
+                        if (s.epic && !uniqueEpics.has(s.epic)) {
+                            uniqueEpics.set(s.epic, s.epicSummary);
+                        }
+                    });
+
+                    const newFeatures: Feature[] = Array.from(uniqueEpics.entries()).map(([key, summary]) => ({
+                        id: key,
+                        name: summary,
+                        jiraId: key,
+                        pibBudget: 0,
+                        teamBudgets: {},
+                        epicOwner: '',
+                        topicKey: '',
+                        pi: currentPI
+                    }));
+
+                    importStories(parsedStories.map((s: any) => {
+                        const { epicSummary, ...story } = s; // Remove temp field
+                        return story as Story;
+                    }), currentPI);
+
+                    if (newFeatures.length > 0) {
+                        importFeatures(newFeatures);
+                    }
+
                     setError(null);
                     if (fileInputRef.current) fileInputRef.current.value = '';
                 } catch (e: any) {
-                    setError(`Import failed: ${e.message}`);
+                    setError(`Import failed: ${e.message} `);
                 }
             },
             error: (err) => {
-                setError(`CSV Parse Error: ${err.message}`);
+                setError(`CSV Parse Error: ${err.message} `);
             }
         });
     };
@@ -119,7 +148,7 @@ const Jira: React.FC = () => {
                             <th>SP</th>
                             <th>Team</th>
                             <th>Sprint</th>
-                            <th>Epic</th>
+                            <th>Feature</th>
                         </tr>
                     </thead>
                     <tbody>
