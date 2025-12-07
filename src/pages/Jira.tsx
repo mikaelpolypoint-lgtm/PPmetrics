@@ -104,12 +104,12 @@ const Jira: React.FC = () => {
     };
 
     return (
-        <div>
+        <div className="space-y-6">
             <PageHeader
                 title={`${currentPI} Jira Import`}
                 description="Import and view Jira stories."
                 actions={
-                    <div className="relative">
+                    <div className="flex items-center gap-3">
                         <input
                             type="file"
                             accept=".csv"
@@ -120,13 +120,13 @@ const Jira: React.FC = () => {
                         />
                         <label
                             htmlFor="jira-upload"
-                            className="btn btn-primary flex items-center gap-2 cursor-pointer"
+                            className="btn btn-primary cursor-pointer"
                         >
                             <Upload size={18} /> Import CSV
                         </label>
                         <button
                             onClick={loadTestJiraData}
-                            className="btn btn-secondary flex items-center gap-2 ml-2"
+                            className="btn btn-secondary"
                         >
                             <FileText size={18} /> Load Test Data
                         </button>
@@ -135,54 +135,56 @@ const Jira: React.FC = () => {
             />
 
             {error && (
-                <div className="card mb-6 flex items-center gap-3" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                <div className="bg-pp-red-700/10 border border-pp-red-700/20 text-pp-red-700 px-4 py-3 rounded-lg flex items-center gap-3">
                     <AlertCircle size={20} />
                     {error}
                 </div>
             )}
 
-            <div className="table-container card" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-                <table>
-                    <thead className="sticky top-0 bg-panel z-10">
-                        <tr>
-                            <th>Key</th>
-                            <th>Summary</th>
-                            <th>Status</th>
-                            <th>SP</th>
-                            <th>Team</th>
-                            <th>Sprint</th>
-                            <th>Feature</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredStories.map(story => (
-                            <tr key={story.id}>
-                                <td className="font-mono text-sm text-accent">{story.key}</td>
-                                <td title={story.name}>{story.name}</td>
-                                <td>
-                                    <span className="badge badge-primary">
-                                        {story.status}
-                                    </span>
-                                </td>
-                                <td>{story.sp}</td>
-                                <td>{story.team}</td>
-                                <td>{story.sprint}</td>
-                                <td><span className="badge badge-accent">{story.epic}</span></td>
+            <div className="card overflow-hidden flex flex-col h-[calc(100vh-200px)]">
+                <div className="overflow-x-auto overflow-y-auto flex-1 -mx-6 -my-6">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-slate-900/90 backdrop-blur sticky top-0 z-10">
+                            <tr className="border-b border-white/10 text-slate-400 text-xs uppercase tracking-wider">
+                                <th className="px-6 py-4 font-semibold">Key</th>
+                                <th className="px-6 py-4 font-semibold">Summary</th>
+                                <th className="px-6 py-4 font-semibold">Status</th>
+                                <th className="px-6 py-4 font-semibold">SP</th>
+                                <th className="px-6 py-4 font-semibold">Team</th>
+                                <th className="px-6 py-4 font-semibold">Sprint</th>
+                                <th className="px-6 py-4 font-semibold">Feature</th>
                             </tr>
-                        ))}
-                        {filteredStories.length === 0 && (
-                            <tr>
-                                <td colSpan={7} className="text-center py-8 text-secondary">
-                                    <div className="flex flex-col items-center gap-3">
-                                        <FileText size={48} style={{ opacity: 0.2 }} />
-                                        <p>No stories imported for {currentPI}.</p>
-                                        <p className="text-sm">Upload a CSV file to get started.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {filteredStories.map(story => (
+                                <tr key={story.id} className="group hover:bg-white/5 transition-colors">
+                                    <td className="px-6 py-3 font-mono text-sm text-pp-blue-500">{story.key}</td>
+                                    <td className="px-6 py-3 text-slate-200 max-w-md truncate" title={story.name}>{story.name}</td>
+                                    <td className="px-6 py-3">
+                                        <span className="badge badge-primary">
+                                            {story.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-3 text-slate-300">{story.sp}</td>
+                                    <td className="px-6 py-3 text-slate-300">{story.team}</td>
+                                    <td className="px-6 py-3 text-slate-300">{story.sprint}</td>
+                                    <td className="px-6 py-3"><span className="badge badge-accent">{story.epic}</span></td>
+                                </tr>
+                            ))}
+                            {filteredStories.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-12 text-slate-500">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <FileText size={48} className="opacity-20" />
+                                            <p>No stories imported for {currentPI}.</p>
+                                            <p className="text-sm">Upload a CSV file to get started.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

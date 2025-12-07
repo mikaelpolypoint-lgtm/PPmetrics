@@ -30,36 +30,47 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     ];
 
     return (
-        <div className="app-layout">
+        <div className="flex h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950">
             {/* Sidebar */}
-            <aside className="sidebar">
-                <div className="p-6 border-b">
-                    <h1 className="text-xl font-bold text-gradient">
+            <aside className="w-72 flex-shrink-0 flex flex-col bg-slate-900/80 backdrop-blur-xl border-r border-white/5">
+                <div className="p-6 border-b border-white/5">
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-white to-pp-mint-500 bg-clip-text text-transparent">
                         Scrum Metrics
                     </h1>
                 </div>
 
                 <div className="p-4">
-                    <label className="text-xs text-secondary uppercase font-bold mb-2 block">
+                    <label className="text-xs text-slate-400 uppercase font-bold mb-2 block tracking-wider">
                         Program Increment
                     </label>
-                    <select
-                        value={currentPI}
-                        onChange={(e) => setCurrentPI(e.target.value)}
-                    >
-                        {PIS.map(pi => (
-                            <option key={pi} value={pi}>{pi}</option>
-                        ))}
-                    </select>
+                    <div className="relative">
+                        <select
+                            value={currentPI}
+                            onChange={(e) => setCurrentPI(e.target.value)}
+                            className="w-full bg-slate-800/50 border border-white/10 rounded-lg px-4 py-2.5 text-slate-200 focus:outline-none focus:border-pp-mint-500 focus:ring-1 focus:ring-pp-mint-500 appearance-none transition-all"
+                        >
+                            {PIS.map(pi => (
+                                <option key={pi} value={pi}>{pi}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                        </div>
+                    </div>
                 </div>
 
-                <nav className="flex-1 overflow-y-auto py-4">
-                    <div className="flex flex-col">
+                <nav className="flex-1 overflow-y-auto py-4 px-3">
+                    <div className="flex flex-col gap-1">
                         {navItems.map((item) => (
                             <NavLink
                                 key={item.path}
                                 to={item.path}
-                                className={({ isActive }) => clsx("nav-item", isActive && "active")}
+                                className={({ isActive }) => clsx(
+                                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                                    isActive
+                                        ? "bg-pp-mint-500/10 text-pp-mint-500 shadow-sm shadow-pp-mint-500/5"
+                                        : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                                )}
                             >
                                 <item.icon size={18} />
                                 {item.label}
@@ -68,15 +79,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </div>
                 </nav>
 
-                <div className="p-4 border-t">
+                <div className="p-4 border-t border-white/5">
                     <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-3 px-4 py-2 text-sm text-secondary">
+                        <button className="flex items-center gap-3 px-3 py-2 text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 rounded-lg transition-colors w-full text-left">
                             <Settings size={18} />
                             <span>Settings</span>
-                        </div>
+                        </button>
                         <button
                             onClick={() => window.confirm('Generate test data?') && seedTestData()}
-                            className="text-xs text-primary hover:underline px-4 text-left bg-transparent border-none cursor-pointer"
+                            className="text-xs text-pp-mint-500/70 hover:text-pp-mint-500 px-3 py-1 text-left transition-colors"
                         >
                             Generate Test Data
                         </button>
@@ -85,8 +96,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </aside>
 
             {/* Main Content */}
-            <main className="main-content">
-                <div className="container">
+            <main className="flex-1 overflow-y-auto">
+                <div className="max-w-[1600px] mx-auto p-8">
                     {children}
                 </div>
             </main>
