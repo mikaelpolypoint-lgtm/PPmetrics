@@ -16,7 +16,9 @@ interface DataContextType {
     isLoading: boolean;
 
     // Actions
+    addTeam: (team: Team) => void;
     updateTeam: (team: Team) => void;
+    deleteTeam: (id: string) => void;
     addTopic: (topic: Topic) => void;
     updateTopic: (topic: Topic) => void;
     deleteTopic: (id: string) => void;
@@ -96,9 +98,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadData();
     }, []);
 
+    const addTeam = async (team: Team) => {
+        setTeams(prev => [...prev, team]);
+        await setDoc(doc(db, 'teams', team.id), team);
+    };
+
     const updateTeam = async (updatedTeam: Team) => {
         setTeams(prev => prev.map(t => t.id === updatedTeam.id ? updatedTeam : t));
         await setDoc(doc(db, 'teams', updatedTeam.id), updatedTeam);
+    };
+
+    const deleteTeam = async (id: string) => {
+        setTeams(prev => prev.filter(t => t.id !== id));
+        await deleteDoc(doc(db, 'teams', id));
     };
 
     const addTopic = async (topic: Topic) => {
@@ -244,7 +256,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return (
         <DataContext.Provider value={{
             teams, topics, features, stories, everhourEntries, currentPI, setCurrentPI, isLoading,
-            updateTeam, addTopic, updateTopic, deleteTopic, addFeature, updateFeature, deleteFeature,
+            updateTeam, addTeam, deleteTeam, addTopic, updateTopic, deleteTopic, addFeature, updateFeature, deleteFeature,
             importStories, importFeatures, importEverhour, seedTestData, loadTestJiraData
         }}>
             {children}
