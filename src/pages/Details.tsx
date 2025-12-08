@@ -33,43 +33,47 @@ const Details: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="card">
-                    <h3 className="text-sm text-secondary uppercase font-bold mb-2">Total Stories</h3>
-                    <p className="text-3xl font-bold">{filteredStories.length}</p>
+                    <h3 className="text-sm text-text-muted uppercase font-bold mb-2">Total Stories</h3>
+                    <p className="text-3xl font-bold text-brand-primary">{filteredStories.length}</p>
                 </div>
                 <div className="card">
-                    <h3 className="text-sm text-secondary uppercase font-bold mb-2">Total Hours Tracked</h3>
-                    <p className="text-3xl font-bold">{totalHours.toFixed(1)} h</p>
+                    <h3 className="text-sm text-text-muted uppercase font-bold mb-2">Total Hours Tracked</h3>
+                    <p className="text-3xl font-bold text-brand-primary">{totalHours.toFixed(1)} h</p>
                 </div>
                 <div className="card">
-                    <h3 className="text-sm text-secondary uppercase font-bold mb-2">Total SP Delivered</h3>
-                    <p className="text-3xl font-bold">{teamStats.reduce((sum, t) => sum + t.totalSP, 0)}</p>
+                    <h3 className="text-sm text-text-muted uppercase font-bold mb-2">Total SP Delivered</h3>
+                    <p className="text-3xl font-bold text-brand-primary">{teamStats.reduce((sum, t) => sum + t.totalSP, 0)}</p>
                 </div>
             </div>
 
-            <div className="table-container card">
-                <h3 className="text-lg font-bold p-6 pb-0">Team Performance</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Team</th>
-                            <th>Stories</th>
-                            <th>Total SP</th>
-                            <th>SP Value</th>
-                            <th>Implied Cost</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {teamStats.map(stat => (
-                            <tr key={stat.id}>
-                                <td className="font-medium">{stat.name}</td>
-                                <td>{stat.storyCount}</td>
-                                <td>{stat.totalSP}</td>
-                                <td>{stat.spValue} CHF</td>
-                                <td>{stat.totalCost.toLocaleString()} CHF</td>
+            <div className="card overflow-hidden">
+                <div className="p-6 pb-0">
+                    <h3 className="text-lg font-bold text-brand-primary">Team Performance</h3>
+                </div>
+                <div className="overflow-x-auto p-6">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Team</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Stories</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Total SP</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">SP Value</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Implied Cost</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {teamStats.map(stat => (
+                                <tr key={stat.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-text-main">{stat.name}</td>
+                                    <td className="px-6 py-4 text-text-main">{stat.storyCount}</td>
+                                    <td className="px-6 py-4 text-text-main">{stat.totalSP}</td>
+                                    <td className="px-6 py-4 text-text-main">{stat.spValue} CHF</td>
+                                    <td className="px-6 py-4 text-text-main">{stat.totalCost.toLocaleString()} CHF</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

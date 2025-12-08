@@ -82,36 +82,40 @@ const Topics: React.FC = () => {
 
             {(isAdding || editingId) && (
                 <div className="card mb-8">
-                    <h3 className="text-lg font-bold mb-4">{isAdding ? 'New Topic' : 'Edit Topic'}</h3>
+                    <h3 className="text-lg font-bold text-brand-primary mb-4">{isAdding ? 'New Topic' : 'Edit Topic'}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Name</label>
+                            <label className="block text-sm text-text-muted mb-1">Name</label>
                             <input
+                                className="input"
                                 value={formData.name || ''}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Topic Name"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Key (3-4 chars)</label>
+                            <label className="block text-sm text-text-muted mb-1">Key (3-4 chars)</label>
                             <input
+                                className="input"
                                 value={formData.key || ''}
                                 onChange={e => setFormData({ ...formData, key: e.target.value.toUpperCase().slice(0, 4) })}
                                 placeholder="KEY"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Priority</label>
+                            <label className="block text-sm text-text-muted mb-1">Priority</label>
                             <input
                                 type="number"
+                                className="input"
                                 value={formData.priority || 0}
                                 onChange={e => setFormData({ ...formData, priority: Number(e.target.value) })}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Total PIB Budget</label>
+                            <label className="block text-sm text-text-muted mb-1">Total PIB Budget</label>
                             <input
                                 type="number"
+                                className="input"
                                 value={formData.pibBudget || 0}
                                 onChange={e => setFormData({ ...formData, pibBudget: Number(e.target.value) })}
                             />
@@ -119,13 +123,14 @@ const Topics: React.FC = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-sm text-secondary mb-2">Team Budget Split</label>
+                        <label className="block text-sm text-text-muted mb-2">Team Budget Split</label>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {teams.map(team => (
                                 <div key={team.id}>
-                                    <label className="text-xs text-secondary">{team.name}</label>
+                                    <label className="text-xs text-text-muted">{team.name}</label>
                                     <input
                                         type="number"
+                                        className="input"
                                         value={formData.teamBudgets?.[team.id] || 0}
                                         onChange={e => updateTeamBudget(team.id, Number(e.target.value))}
                                     />
@@ -141,52 +146,54 @@ const Topics: React.FC = () => {
                 </div>
             )}
 
-            <div className="table-container card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Priority</th>
-                            <th>Key</th>
-                            <th>Name</th>
-                            <th>Budget</th>
-                            <th>Team Split</th>
-                            <th className="text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredTopics.sort((a, b) => a.priority - b.priority).map(topic => (
-                            <tr key={topic.id}>
-                                <td>{topic.priority}</td>
-                                <td><span className="badge badge-accent">{topic.key}</span></td>
-                                <td className="font-medium">{topic.name}</td>
-                                <td>{topic.pibBudget.toLocaleString()} CHF</td>
-                                <td className="text-sm text-secondary">
-                                    {Object.entries(topic.teamBudgets || {}).map(([tid, amount]) => {
-                                        const team = teams.find(t => t.id === tid);
-                                        return amount > 0 ? <div key={tid}>{team?.name}: {amount}</div> : null;
-                                    })}
-                                </td>
-                                <td className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <button onClick={() => startEdit(topic)} className="btn-icon">
-                                            <Edit2 size={18} />
-                                        </button>
-                                        <button onClick={() => deleteTopic(topic.id)} className="btn-icon" style={{ color: 'var(--danger)' }}>
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {filteredTopics.length === 0 && (
+            <div className="card overflow-hidden">
+                <div className="overflow-x-auto -mx-6 -my-6">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
-                                <td colSpan={6} className="text-center py-8 text-secondary">
-                                    No topics found for {currentPI}. Create one to get started.
-                                </td>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Priority</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Key</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Name</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Budget</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Team Split</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Actions</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredTopics.sort((a, b) => a.priority - b.priority).map(topic => (
+                                <tr key={topic.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 text-text-main">{topic.priority}</td>
+                                    <td className="px-6 py-4"><span className="badge badge-accent">{topic.key}</span></td>
+                                    <td className="px-6 py-4 font-medium text-text-main">{topic.name}</td>
+                                    <td className="px-6 py-4 text-text-main">{topic.pibBudget.toLocaleString()} CHF</td>
+                                    <td className="px-6 py-4 text-sm text-text-muted">
+                                        {Object.entries(topic.teamBudgets || {}).map(([tid, amount]) => {
+                                            const team = teams.find(t => t.id === tid);
+                                            return amount > 0 ? <div key={tid}>{team?.name}: {amount}</div> : null;
+                                        })}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <button onClick={() => startEdit(topic)} className="p-1.5 text-text-muted hover:text-brand-accent hover:bg-gray-100 rounded transition-colors">
+                                                <Edit2 size={18} />
+                                            </button>
+                                            <button onClick={() => deleteTopic(topic.id)} className="p-1.5 text-text-muted hover:text-red-600 hover:bg-gray-100 rounded transition-colors">
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredTopics.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="text-center py-8 text-text-muted">
+                                        No topics found for {currentPI}. Create one to get started.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

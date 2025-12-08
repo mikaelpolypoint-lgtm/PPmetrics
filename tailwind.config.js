@@ -46,6 +46,21 @@ export default {
                         500: '#FFEE91',
                         700: '#E5C300',
                     }
+                },
+                // Semantic Colors for Corporate Theme
+                brand: {
+                    primary: '#003A59', // pp-blue-900
+                    secondary: '#006AA4', // pp-blue-700
+                    accent: '#078091',  // pp-mint-700
+                },
+                bg: {
+                    main: '#F4F4F4',    // pp-grey-200
+                    surface: '#FFFFFF',
+                },
+                text: {
+                    main: '#303133',    // pp-black
+                    muted: '#606266',   // pp-grey-750
+                    inverted: '#FFFFFF',
                 }
             },
             boxShadow: {

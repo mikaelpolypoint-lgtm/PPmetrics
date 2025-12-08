@@ -81,27 +81,30 @@ const Features: React.FC = () => {
 
             {(isAdding || editingId) && (
                 <div className="card mb-8">
-                    <h3 className="text-lg font-bold mb-4">{isAdding ? 'New Feature' : 'Edit Feature'}</h3>
+                    <h3 className="text-lg font-bold text-brand-primary mb-4">{isAdding ? 'New Feature' : 'Edit Feature'}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Name</label>
+                            <label className="block text-sm text-text-muted mb-1">Name</label>
                             <input
+                                className="input"
                                 value={formData.name || ''}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Feature Name"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Jira ID</label>
+                            <label className="block text-sm text-text-muted mb-1">Jira ID</label>
                             <input
+                                className="input"
                                 value={formData.jiraId || ''}
                                 onChange={e => setFormData({ ...formData, jiraId: e.target.value })}
                                 placeholder="FEAT-123"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Topic</label>
+                            <label className="block text-sm text-text-muted mb-1">Topic</label>
                             <select
+                                className="input"
                                 value={formData.topicKey || ''}
                                 onChange={e => setFormData({ ...formData, topicKey: e.target.value })}
                             >
@@ -112,17 +115,19 @@ const Features: React.FC = () => {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Epic Owner</label>
+                            <label className="block text-sm text-text-muted mb-1">Epic Owner</label>
                             <input
+                                className="input"
                                 value={formData.epicOwner || ''}
                                 onChange={e => setFormData({ ...formData, epicOwner: e.target.value })}
                                 placeholder="Owner Name"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm text-secondary mb-1">Total PIB Budget</label>
+                            <label className="block text-sm text-text-muted mb-1">Total PIB Budget</label>
                             <input
                                 type="number"
+                                className="input"
                                 value={formData.pibBudget || 0}
                                 onChange={e => setFormData({ ...formData, pibBudget: Number(e.target.value) })}
                             />
@@ -130,13 +135,14 @@ const Features: React.FC = () => {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-sm text-secondary mb-2">Team Budget Split</label>
+                        <label className="block text-sm text-text-muted mb-2">Team Budget Split</label>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {teams.map(team => (
                                 <div key={team.id}>
-                                    <label className="text-xs text-secondary">{team.name}</label>
+                                    <label className="text-xs text-text-muted">{team.name}</label>
                                     <input
                                         type="number"
+                                        className="input"
                                         value={formData.teamBudgets?.[team.id] || 0}
                                         onChange={e => updateTeamBudget(team.id, Number(e.target.value))}
                                     />
@@ -152,58 +158,60 @@ const Features: React.FC = () => {
                 </div>
             )}
 
-            <div className="table-container card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Jira ID</th>
-                            <th>Name</th>
-                            <th>Topic</th>
-                            <th>Owner</th>
-                            <th>Budget</th>
-                            <th>Team Split</th>
-                            <th className="text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredFeatures.map(feature => (
-                            <tr key={feature.id}>
-                                <td><span className="font-mono text-sm">{feature.jiraId}</span></td>
-                                <td className="font-medium">{feature.name}</td>
-                                <td>
-                                    <span className="badge badge-accent">
-                                        {feature.topicKey}
-                                    </span>
-                                </td>
-                                <td>{feature.epicOwner}</td>
-                                <td>{feature.pibBudget.toLocaleString()} CHF</td>
-                                <td className="text-sm text-secondary">
-                                    {Object.entries(feature.teamBudgets || {}).map(([tid, amount]) => {
-                                        const team = teams.find(t => t.id === tid);
-                                        return amount > 0 ? <div key={tid}>{team?.name}: {amount}</div> : null;
-                                    })}
-                                </td>
-                                <td className="text-right">
-                                    <div className="flex justify-end gap-2">
-                                        <button onClick={() => startEdit(feature)} className="btn-icon">
-                                            <Edit2 size={18} />
-                                        </button>
-                                        <button onClick={() => deleteFeature(feature.id)} className="btn-icon" style={{ color: 'var(--danger)' }}>
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        {filteredFeatures.length === 0 && (
+            <div className="card overflow-hidden">
+                <div className="overflow-x-auto -mx-6 -my-6">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
-                                <td colSpan={7} className="text-center py-8 text-secondary">
-                                    No features found for {currentPI}.
-                                </td>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Jira ID</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Name</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Topic</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Owner</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Budget</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Team Split</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider text-right">Actions</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredFeatures.map(feature => (
+                                <tr key={feature.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4"><span className="font-mono text-sm text-brand-secondary">{feature.jiraId}</span></td>
+                                    <td className="px-6 py-4 font-medium text-text-main">{feature.name}</td>
+                                    <td className="px-6 py-4">
+                                        <span className="badge badge-accent">
+                                            {feature.topicKey}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-text-main">{feature.epicOwner}</td>
+                                    <td className="px-6 py-4 text-text-main">{feature.pibBudget.toLocaleString()} CHF</td>
+                                    <td className="px-6 py-4 text-sm text-text-muted">
+                                        {Object.entries(feature.teamBudgets || {}).map(([tid, amount]) => {
+                                            const team = teams.find(t => t.id === tid);
+                                            return amount > 0 ? <div key={tid}>{team?.name}: {amount}</div> : null;
+                                        })}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex justify-end gap-2">
+                                            <button onClick={() => startEdit(feature)} className="p-1.5 text-text-muted hover:text-brand-accent hover:bg-gray-100 rounded transition-colors">
+                                                <Edit2 size={18} />
+                                            </button>
+                                            <button onClick={() => deleteFeature(feature.id)} className="p-1.5 text-text-muted hover:text-red-600 hover:bg-gray-100 rounded transition-colors">
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredFeatures.length === 0 && (
+                                <tr>
+                                    <td colSpan={7} className="text-center py-8 text-text-muted">
+                                        No features found for {currentPI}.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

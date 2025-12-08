@@ -22,15 +22,14 @@ const Everhour: React.FC = () => {
             complete: (results) => {
                 try {
                     const parsedEntries: EverhourEntry[] = results.data.map((row: any, index: number) => {
-                        // Mapping logic
                         const key = row['Key'] || row['Issue Key'] || row['Task ID'] || '';
                         const hours = parseFloat(row['Time'] || row['Hours'] || row['Total Time']) || 0;
-                        const sprint = row['Sprint'] || row['Tags'] || ''; // Assuming Sprint might be in tags or explicit column
+                        const sprint = row['Sprint'] || row['Tags'] || '';
 
                         if (!key) throw new Error(`Row ${index + 1}: Missing Key`);
 
                         return {
-                            id: `${key}-${index}`, // Unique ID
+                            id: `${key}-${index}`,
                             jiraKey: key,
                             totalHours: hours,
                             sprint: sprint,
@@ -52,7 +51,7 @@ const Everhour: React.FC = () => {
     };
 
     return (
-        <div>
+        <div className="space-y-6">
             <PageHeader
                 title={`${currentPI} Everhour Import`}
                 description="Import and view time tracking data."
@@ -77,42 +76,44 @@ const Everhour: React.FC = () => {
             />
 
             {error && (
-                <div className="card mb-6 flex items-center gap-3" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>
+                <div className="card mb-6 flex items-center gap-3 border-red-200 bg-red-50 text-red-700">
                     <AlertCircle size={20} />
                     {error}
                 </div>
             )}
 
-            <div className="table-container card" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-                <table>
-                    <thead className="sticky top-0 bg-panel z-10">
-                        <tr>
-                            <th>Jira Key</th>
-                            <th>Sprint</th>
-                            <th>Total Hours</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredEntries.map(entry => (
-                            <tr key={entry.id}>
-                                <td className="font-mono text-sm text-accent">{entry.jiraKey}</td>
-                                <td>{entry.sprint || '-'}</td>
-                                <td className="font-bold">{entry.totalHours.toFixed(2)} h</td>
+            <div className="card overflow-hidden flex flex-col h-[calc(100vh-200px)]">
+                <div className="overflow-x-auto overflow-y-auto flex-1 -mx-6 -my-6">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-bg-surface backdrop-blur sticky top-0 z-10">
+                            <tr className="border-b border-gray-100 text-text-muted text-xs uppercase tracking-wider">
+                                <th className="px-6 py-4 font-semibold">Jira Key</th>
+                                <th className="px-6 py-4 font-semibold">Sprint</th>
+                                <th className="px-6 py-4 font-semibold">Total Hours</th>
                             </tr>
-                        ))}
-                        {filteredEntries.length === 0 && (
-                            <tr>
-                                <td colSpan={3} className="text-center py-8 text-secondary">
-                                    <div className="flex flex-col items-center gap-3">
-                                        <Clock size={48} style={{ opacity: 0.2 }} />
-                                        <p>No time data imported for {currentPI}.</p>
-                                        <p className="text-sm">Upload a CSV file to get started.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredEntries.map(entry => (
+                                <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 font-mono text-sm text-brand-secondary">{entry.jiraKey}</td>
+                                    <td className="px-6 py-4 text-text-main">{entry.sprint || '-'}</td>
+                                    <td className="px-6 py-4 font-bold text-text-main">{entry.totalHours.toFixed(2)} h</td>
+                                </tr>
+                            ))}
+                            {filteredEntries.length === 0 && (
+                                <tr>
+                                    <td colSpan={3} className="text-center py-12 text-text-muted">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <Clock size={48} className="opacity-20" />
+                                            <p>No time data imported for {currentPI}.</p>
+                                            <p className="text-sm">Upload a CSV file to get started.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );

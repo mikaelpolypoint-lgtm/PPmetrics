@@ -81,11 +81,11 @@ const Teams: React.FC = () => {
             />
 
             {isAdding && (
-                <div className="card mb-6 border-pp-mint-500/30">
-                    <h3 className="text-lg font-bold text-slate-100 mb-4">Add New Team</h3>
+                <div className="card mb-6 border-brand-accent/30">
+                    <h3 className="text-lg font-bold text-brand-primary mb-4">Add New Team</h3>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                         <div>
-                            <label className="block text-xs text-slate-400 mb-1">Team Name</label>
+                            <label className="block text-xs text-text-muted mb-1">Team Name</label>
                             <input
                                 className="input"
                                 placeholder="Team Name"
@@ -94,7 +94,7 @@ const Teams: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-slate-400 mb-1">SP Value (CHF)</label>
+                            <label className="block text-xs text-text-muted mb-1">SP Value (CHF)</label>
                             <input
                                 type="number"
                                 className="input"
@@ -104,7 +104,7 @@ const Teams: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-slate-400 mb-1">PIB Budget</label>
+                            <label className="block text-xs text-text-muted mb-1">PIB Budget</label>
                             <input
                                 type="number"
                                 className="input"
@@ -114,7 +114,7 @@ const Teams: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-xs text-slate-400 mb-1">Hourly Rate</label>
+                            <label className="block text-xs text-text-muted mb-1">Hourly Rate</label>
                             <input
                                 type="number"
                                 className="input"
@@ -134,18 +134,18 @@ const Teams: React.FC = () => {
             <div className="card overflow-hidden">
                 <div className="overflow-x-auto -mx-6 -my-6">
                     <table className="w-full text-left border-collapse">
-                        <thead className="bg-slate-900/50 border-b border-white/10">
+                        <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Team Name</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">SP Value (CHF)</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">PIB Budget</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Hourly Rate</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-32 text-right">Actions</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Team Name</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">SP Value (CHF)</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">PIB Budget</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Hourly Rate</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider w-32 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-gray-100">
                             {teams.map(team => (
-                                <tr key={team.id} className="group hover:bg-white/5 transition-colors">
+                                <tr key={team.id} className="group hover:bg-gray-50 transition-colors">
                                     {editingId === team.id ? (
                                         <>
                                             <td className="px-6 py-3">
@@ -181,10 +181,10 @@ const Teams: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-3 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <button onClick={handleSave} className="p-1.5 text-pp-green-default hover:bg-pp-green-default/10 rounded transition-colors">
+                                                    <button onClick={handleSave} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors">
                                                         <Save size={18} />
                                                     </button>
-                                                    <button onClick={handleCancel} className="p-1.5 text-pp-red-700 hover:bg-pp-red-700/10 rounded transition-colors">
+                                                    <button onClick={handleCancel} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors">
                                                         <X size={18} />
                                                     </button>
                                                 </div>
@@ -192,16 +192,16 @@ const Teams: React.FC = () => {
                                         </>
                                     ) : (
                                         <>
-                                            <td className="px-6 py-4 font-medium text-slate-200">{team.name}</td>
-                                            <td className="px-6 py-4 text-slate-300">{team.spValue} CHF</td>
-                                            <td className="px-6 py-4 text-slate-300">{team.pibBudget} CHF</td>
-                                            <td className="px-6 py-4 text-slate-300">{team.hourlyRate} CHF/h</td>
+                                            <td className="px-6 py-4 font-medium text-text-main">{team.name}</td>
+                                            <td className="px-6 py-4 text-text-main">{team.spValue} CHF</td>
+                                            <td className="px-6 py-4 text-text-main">{team.pibBudget} CHF</td>
+                                            <td className="px-6 py-4 text-text-main">{team.hourlyRate} CHF/h</td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => handleEdit(team)} className="p-1.5 text-slate-400 hover:text-pp-mint-500 hover:bg-white/5 rounded transition-colors">
+                                                    <button onClick={() => handleEdit(team)} className="p-1.5 text-text-muted hover:text-brand-accent hover:bg-gray-50 rounded transition-colors">
                                                         <Edit2 size={18} />
                                                     </button>
-                                                    <button onClick={() => handleDelete(team.id)} className="p-1.5 text-slate-400 hover:text-pp-red-700 hover:bg-white/5 rounded transition-colors">
+                                                    <button onClick={() => handleDelete(team.id)} className="p-1.5 text-text-muted hover:text-red-600 hover:bg-gray-50 rounded transition-colors">
                                                         <Trash2 size={18} />
                                                     </button>
                                                 </div>

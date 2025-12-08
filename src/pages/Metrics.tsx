@@ -39,57 +39,62 @@ const Metrics: React.FC = () => {
             />
 
             {isAdding && (
-                <div className="card mb-6">
-                    <h3 className="font-bold mb-4">New Metric Definition</h3>
-                    <div className="grid gap-4 mb-4">
+                <div className="card mb-6 border-brand-accent/30">
+                    <h3 className="font-bold text-brand-primary mb-4 p-6 pb-0">New Metric Definition</h3>
+                    <div className="p-6 pt-2 grid gap-4">
                         <input
+                            className="input"
                             placeholder="Metric Name"
                             value={newMetric.name || ''}
                             onChange={e => setNewMetric({ ...newMetric, name: e.target.value })}
                         />
                         <input
+                            className="input"
                             placeholder="Description"
                             value={newMetric.description || ''}
                             onChange={e => setNewMetric({ ...newMetric, description: e.target.value })}
                         />
                         <input
+                            className="input"
                             placeholder="Formula / Calculation Logic"
                             value={newMetric.formula || ''}
                             onChange={e => setNewMetric({ ...newMetric, formula: e.target.value })}
                         />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <button onClick={() => setIsAdding(false)} className="btn btn-secondary">Cancel</button>
-                        <button onClick={addMetric} className="btn btn-primary">Save</button>
+                        <div className="flex justify-end gap-2 mt-2">
+                            <button onClick={() => setIsAdding(false)} className="btn btn-secondary">Cancel</button>
+                            <button onClick={addMetric} className="btn btn-primary">Save</button>
+                        </div>
                     </div>
                 </div>
             )}
 
-            <div className="card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Description</th>
-                            <th>Formula</th>
-                            <th className="w-16"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {metrics.map(m => (
-                            <tr key={m.id}>
-                                <td className="font-medium">{m.name}</td>
-                                <td>{m.description}</td>
-                                <td className="font-mono text-sm text-[var(--accent)]">{m.formula}</td>
-                                <td>
-                                    <button onClick={() => setMetrics(metrics.filter(x => x.id !== m.id))} className="text-[var(--danger)]">
-                                        <Trash2 size={18} />
-                                    </button>
-                                </td>
+            <div className="card overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Name</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Description</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Formula</th>
+                                <th className="px-6 py-4 w-16"></th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {metrics.map(m => (
+                                <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-6 py-4 font-medium text-text-main">{m.name}</td>
+                                    <td className="px-6 py-4 text-text-muted">{m.description}</td>
+                                    <td className="px-6 py-4 font-mono text-sm text-brand-accent">{m.formula}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button onClick={() => setMetrics(metrics.filter(x => x.id !== m.id))} className="text-text-muted hover:text-red-600 transition-colors">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
