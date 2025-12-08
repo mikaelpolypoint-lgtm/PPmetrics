@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { PIS } from '../types';
 import {
@@ -16,7 +16,16 @@ import {
 import clsx from 'clsx';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { currentPI, setCurrentPI, seedTestData } = useData();
+    const { currentPI, seedTestData } = useData();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const handlePIChange = (newPI: string) => {
+        // Replace current PI in URL with new PI
+        const currentPath = location.pathname;
+        const newPath = currentPath.replace(`/${currentPI}`, `/${newPI}`);
+        navigate(newPath);
+    };
 
     const navItems = [
         { path: `/${currentPI}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
@@ -46,7 +55,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <div className="relative">
                         <select
                             value={currentPI}
-                            onChange={(e) => setCurrentPI(e.target.value)}
+                            onChange={(e) => handlePIChange(e.target.value)}
                             className="w-full bg-bg-main border border-gray-200 rounded-lg px-4 py-2.5 text-text-main focus:outline-none focus:border-brand-accent focus:ring-1 focus:ring-brand-accent appearance-none transition-all"
                         >
                             {PIS.map(pi => (
@@ -86,7 +95,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             <span>Settings</span>
                         </button>
                         <button
-                            onClick={() => window.confirm('Generate test data?') && seedTestData()}
+                            onClick={() => seedTestData()}
                             className="text-xs text-brand-accent hover:text-brand-primary px-3 py-1 text-left transition-colors"
                         >
                             Generate Test Data

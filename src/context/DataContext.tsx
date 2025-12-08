@@ -231,7 +231,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         newStories.forEach(s => batch.set(doc(db, 'stories', s.id), s));
 
         await batch.commit();
-        alert('Test data seeded for 26.1 to Firestore');
+        console.log('Test data seeded for 26.1 to Firestore');
     };
 
     const loadTestJiraData = async () => {
