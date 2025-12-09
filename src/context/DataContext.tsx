@@ -25,6 +25,9 @@ interface DataContextType {
     addFeature: (feature: Feature) => void;
     updateFeature: (feature: Feature) => void;
     deleteFeature: (id: string) => void;
+    addStory: (story: Story) => void;
+    updateStory: (story: Story) => void;
+    deleteStory: (id: string) => void;
 
     // Bulk Import Actions
     importStories: (stories: Story[], pi: string) => void;
@@ -143,6 +146,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await deleteDoc(doc(db, 'features', id));
     };
 
+    const addStory = async (story: Story) => {
+        setStories(prev => [...prev, story]);
+        await setDoc(doc(db, 'stories', story.id), story);
+    };
+
+    const updateStory = async (story: Story) => {
+        setStories(prev => prev.map(s => s.id === story.id ? story : s));
+        await setDoc(doc(db, 'stories', story.id), story);
+    };
+
+    const deleteStory = async (id: string) => {
+        setStories(prev => prev.filter(s => s.id !== id));
+        await deleteDoc(doc(db, 'stories', id));
+    };
+
     const importStories = async (newStories: Story[], pi: string) => {
         // Optimistic update
         setStories(prev => [...prev.filter(s => s.pi !== pi), ...newStories]);
@@ -257,6 +275,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         <DataContext.Provider value={{
             teams, topics, features, stories, everhourEntries, currentPI, setCurrentPI, isLoading,
             updateTeam, addTeam, deleteTeam, addTopic, updateTopic, deleteTopic, addFeature, updateFeature, deleteFeature,
+            addStory, updateStory, deleteStory,
             importStories, importFeatures, importEverhour, seedTestData, loadTestJiraData
         }}>
             {children}
