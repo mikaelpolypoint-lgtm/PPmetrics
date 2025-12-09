@@ -9,6 +9,7 @@ import Features from './pages/Features';
 import Jira from './pages/Jira';
 import Everhour from './pages/Everhour';
 import Details from './pages/Details';
+import Burndown from './pages/Burndown';
 import Metrics from './pages/Metrics';
 import { PIS } from './types';
 
@@ -42,6 +43,7 @@ const AppRoutes: React.FC = () => {
             <Route path="topics" element={<Topics />} />
             <Route path="features" element={<Features />} />
             <Route path="jira" element={<Jira />} />
+            <Route path="burndown" element={<Burndown />} />
             <Route path="everhour" element={<Everhour />} />
             <Route path="details" element={<Details />} />
             <Route path="metrics" element={<Metrics />} />

@@ -37,6 +37,7 @@ export interface Story {
   sprint: string;
   epic: string; // Parent key
   pi: string;
+  since?: string; // Status Category Changed Date (dd.mm.yy)
 }
 
 export interface EverhourEntry {

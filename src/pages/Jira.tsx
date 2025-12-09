@@ -7,7 +7,7 @@ import { Upload, FileText, AlertCircle, Plus, Edit2, Trash2, X, Save, Download, 
 import clsx from 'clsx';
 
 type SortDirection = 'asc' | 'desc';
-type SortKey = keyof Story | 'statusColor';
+type SortKey = keyof Story | 'statusColor' | 'since';
 
 interface SortConfig {
     key: SortKey;
@@ -108,6 +108,17 @@ const Jira: React.FC = () => {
             if (sortConfig.key === 'statusColor') {
                 aValue = getStatusRank(a.status);
                 bValue = getStatusRank(b.status);
+            } else if (sortConfig.key === 'since') {
+                // Parse "dd.mm.yy" to comparable value
+                const parseDate = (d?: string) => {
+                    if (!d) return 0;
+                    const parts = d.split('.');
+                    if (parts.length !== 3) return 0;
+                    // "25" -> 2025
+                    return new Date(`20${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+                };
+                aValue = parseDate(a.since);
+                bValue = parseDate(b.since);
             }
 
             if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -150,9 +161,41 @@ const Jira: React.FC = () => {
                         let team = findVal(['Custom field (pdev_unit)', 'pdev_unit', 'Team']) || '';
 
                         if (team === 'Hydrogen 1') team = 'H1';
-                        const sprint = findVal(['Custom field (current Sprint)', 'current Sprint', 'Sprint']) || '';
+                        let sprint = findVal(['Custom field (CurrentSprint)', 'current Sprint', 'Sprint']) || '';
+
+                        // Normalize Sprint: Remove team prefixes (case insensitive, handles whitespace)
+                        sprint = sprint.trim().replace(/^(H1-|Tungsten-|Zn2C-|Neon-)/i, '');
+
                         const epic = findVal(['Parent key', 'Parent', 'Epic Link', 'Custom field (Epic Link)']) || '';
                         const epicSummary = findVal(['Parent summary', 'Parent Summary']) || epic;
+
+                        // Parse "Status Category Changed" -> "dd.mm.yy"
+                        let since = '';
+                        const rawSince = findVal(['Status Category Changed', 'Status Changed']) || '';
+                        if (rawSince) {
+                            try {
+                                // Expected format: "18.09.2025 14:19" or similar
+                                const datePart = rawSince.split(' ')[0]; // "18.09.2025"
+                                const parts = datePart.split('.');
+                                if (parts.length === 3) {
+                                    const day = parts[0];
+                                    const month = parts[1];
+                                    const year = parts[2].slice(-2); // "25"
+                                    since = `${day}.${month}.${year}`;
+                                } else {
+                                    // Fallback if format is different (e.g. YYYY-MM-DD)
+                                    const d = new Date(rawSince);
+                                    if (!isNaN(d.getTime())) {
+                                        const day = String(d.getDate()).padStart(2, '0');
+                                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                                        const year = String(d.getFullYear()).slice(-2);
+                                        since = `${day}.${month}.${year}`;
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn("Failed to parse date:", rawSince);
+                            }
+                        }
 
                         if (!key) throw new Error("Could not find Issue Key in CSV row");
 
@@ -166,7 +209,8 @@ const Jira: React.FC = () => {
                             sprint: sprint,
                             epic: epic,
                             epicSummary: epicSummary,
-                            pi: currentPI
+                            pi: currentPI,
+                            since: since
                         };
                     });
 
@@ -420,6 +464,7 @@ const Jira: React.FC = () => {
                                 <Th column="key" label="Key" />
                                 <Th column="name" label="Summary" />
                                 <Th column="statusColor" label="Status" />
+                                <Th column="since" label="Since" />
                                 <Th column="sp" label="SP" />
                                 <Th column="team" label="Team" />
                                 <Th column="sprint" label="Sprint" />
@@ -430,7 +475,16 @@ const Jira: React.FC = () => {
                         <tbody className="divide-y divide-gray-100">
                             {processedStories.map(story => (
                                 <tr key={story.id} className="group hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-3 font-mono text-sm text-brand-secondary">{story.key}</td>
+                                    <td className="px-6 py-3 font-mono text-sm">
+                                        <a
+                                            href={`https://polypoint.atlassian.net/browse/${story.key}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-brand-secondary hover:text-brand-primary hover:underline"
+                                        >
+                                            {story.key}
+                                        </a>
+                                    </td>
                                     <td className="px-6 py-3 text-text-main max-w-md truncate" title={story.name}>{story.name}</td>
                                     <td className="px-6 py-3">
                                         <span className={clsx(
@@ -440,6 +494,7 @@ const Jira: React.FC = () => {
                                             {story.status}
                                         </span>
                                     </td>
+                                    <td className="px-6 py-3 text-text-muted text-xs">{story.since}</td>
                                     <td className="px-6 py-3 text-text-main">{story.sp}</td>
                                     <td className="px-6 py-3 text-text-main">{story.team}</td>
                                     <td className="px-6 py-3 text-text-main">{story.sprint}</td>

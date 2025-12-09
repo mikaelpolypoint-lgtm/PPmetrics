@@ -6,6 +6,7 @@ import {
     LayoutDashboard,
     Table,
     Users,
+    PieChart,
     BarChart3,
     Layers,
     FileText,
@@ -16,7 +17,7 @@ import {
 import clsx from 'clsx';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { currentPI, seedTestData } = useData();
+    const { currentPI } = useData();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -31,6 +32,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { path: `/${currentPI}/dashboard`, label: 'Dashboard', icon: LayoutDashboard },
         { path: `/${currentPI}/details`, label: 'Details', icon: Table },
         { path: `/${currentPI}/jira`, label: 'Jira', icon: FileText },
+        { path: `/${currentPI}/burndown`, label: 'Burndown', icon: PieChart },
         { path: `/${currentPI}/everhour`, label: 'Everhour', icon: Clock },
         { path: `/${currentPI}/topics`, label: 'Topics', icon: Layers },
         { path: `/${currentPI}/features`, label: 'Features', icon: Database },
@@ -94,12 +96,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             <Settings size={18} />
                             <span>Settings</span>
                         </button>
-                        <button
-                            onClick={() => seedTestData()}
-                            className="text-xs text-brand-accent hover:text-brand-primary px-3 py-1 text-left transition-colors"
-                        >
-                            Generate Test Data
-                        </button>
+
                     </div>
                 </div>
             </aside>
