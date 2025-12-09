@@ -15,7 +15,7 @@ interface SortConfig {
 }
 
 const Jira: React.FC = () => {
-    const { stories, importStories, importFeatures, currentPI, loadTestJiraData, addStory, updateStory, deleteStory, teams } = useData();
+    const { stories, importStories, importFeatures, currentPI, addStory, updateStory, deleteStory } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const jsonInputRef = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string | null>(null);
