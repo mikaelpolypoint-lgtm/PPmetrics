@@ -1,45 +1,127 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import clsx from 'clsx';
 
 const Dashboard: React.FC = () => {
-    const { topics, features, currentPI } = useData();
+    const { topics, features, stories, teams, currentPI } = useData();
+    const [teamFilter, setTeamFilter] = useState<string>('all');
+    const [topicFilter, setTopicFilter] = useState<string>('all');
 
-    const filteredTopics = topics.filter(t => t.pi === currentPI);
-    const filteredFeatures = features.filter(f => f.pi === currentPI);
+    // Filter relevant data for Current PI
+    const piTopics = topics.filter(t => t.pi === currentPI);
+    const piFeatures = features.filter(f => f.pi === currentPI);
+    const piStories = stories.filter(s => s.pi === currentPI);
 
-    const data = filteredTopics.map(topic => {
-        const topicFeatures = filteredFeatures.filter(f => f.topicKey === topic.key);
-        const plannedCost = topicFeatures.reduce((sum, f) => sum + f.pibBudget, 0);
+    // Calculate Data based on filters
+    // We map over topics first, but we might need to filter topics if topicFilter is set.
+    // If teamFilter is set, we only count costs related to that team.
+
+    let displayedTopics = piTopics;
+    if (topicFilter !== 'all') {
+        displayedTopics = displayedTopics.filter(t => t.key === topicFilter);
+    }
+
+    const data = displayedTopics.map(topic => {
+        // Find features belonging to this topic
+        const topicFeatures = piFeatures.filter(f => f.topicKey === topic.key);
+
+        let plannedCost = 0;
+        let topicBudget = topic.pibBudget;
+
+        // If team filter is active, we can't easily filter the "Budget" part because budget is usually per topic, not per team (unless we use teamBudgets map).
+        // Let's check if topic has teamBudgets.
+        if (teamFilter !== 'all') {
+            const team = teams.find(t => t.name === teamFilter);
+            if (team && topic.teamBudgets && topic.teamBudgets[team.id]) {
+                topicBudget = topic.teamBudgets[team.id] || 0;
+            } else if (team) {
+                // Fallback or 0 if no specific team budget? 
+                // If filtering by team, and no specific budget allocation is known, maybe show 0 or full?
+                // Typically simpler to specific budget. Let's assume 0 if not specified for that team.
+                topicBudget = 0;
+            }
+        }
+
+        // Loop through features to sum up story costs
+        topicFeatures.forEach(feature => {
+            // Find stories for this feature (epic)
+            let featureStories = piStories.filter(s => s.epic === feature.jiraId);
+
+            // Filter stories by team if needed
+            if (teamFilter !== 'all') {
+                featureStories = featureStories.filter(s => s.team === teamFilter || (teamFilter === 'Hydrogen 1' && s.team === 'H1'));
+            }
+
+            // Sum up value of these stories
+            const featureCost = featureStories.reduce((sum, story) => {
+                const teamObj = teams.find(t => t.name === story.team || (story.team === 'H1' && t.name === 'Hydrogen 1'));
+                const spValue = teamObj ? teamObj.spValue : 0;
+                return sum + ((story.sp || 0) * spValue);
+            }, 0);
+
+            plannedCost += featureCost;
+        });
 
         return {
             name: topic.key, // Use Key for x-axis to save space
             fullName: topic.name,
-            Budget: topic.pibBudget,
+            Budget: topicBudget,
             Planned: plannedCost,
-            Variance: topic.pibBudget - plannedCost
+            Variance: topicBudget - plannedCost
         };
     });
 
+    // Filter out entries with 0 budget AND 0 planned if filtering (optional, but cleaner)
+    const activeData = data.filter(d => d.Budget !== 0 || d.Planned !== 0);
+
+    const totalBudget = activeData.reduce((sum, item) => sum + item.Budget, 0);
+    const totalPlanned = activeData.reduce((sum, item) => sum + item.Planned, 0);
+    const totalVariance = totalBudget - totalPlanned;
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
                 title={`${currentPI} Dashboard`}
                 description="Budget vs Plan Overview"
+                actions={
+                    <div className="flex gap-4">
+                        <select
+                            value={topicFilter}
+                            onChange={(e) => setTopicFilter(e.target.value)}
+                            className="input text-sm py-1.5 min-w-[150px]"
+                        >
+                            <option value="all">All Topics</option>
+                            {piTopics.map(t => (
+                                <option key={t.id} value={t.key}>{t.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={teamFilter}
+                            onChange={(e) => setTeamFilter(e.target.value)}
+                            className="input text-sm py-1.5 min-w-[150px]"
+                        >
+                            <option value="all">All Teams</option>
+                            {teams.map(t => (
+                                <option key={t.id} value={t.name}>{t.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                }
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="card h-[400px] flex flex-col">
+                <div className="card h-[500px] flex flex-col">
                     <h3 className="text-lg font-bold text-brand-primary mb-6">Topic Budget vs Feature Plan</h3>
                     <div className="flex-1 min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                            <BarChart data={activeData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                                 <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
                                 <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickLine={false} />
                                 <Tooltip
+                                    formatter={(value: number) => value.toLocaleString('de-CH')}
                                     contentStyle={{
                                         backgroundColor: '#ffffff',
                                         borderColor: '#e2e8f0',
@@ -58,12 +140,12 @@ const Dashboard: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="card flex flex-col">
+                <div className="card flex flex-col h-[500px]">
                     <h3 className="text-lg font-bold text-brand-primary mb-6">Budget Details</h3>
-                    <div className="overflow-x-auto -mx-6 px-6">
+                    <div className="overflow-x-auto -mx-6 px-6 flex-1">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="border-b border-gray-100 text-text-muted text-xs uppercase tracking-wider">
+                                <tr className="border-b border-gray-100 text-text-muted text-xs uppercase tracking-wider sticky top-0 bg-white">
                                     <th className="pb-3 font-semibold">Topic</th>
                                     <th className="pb-3 font-semibold text-right">Budget</th>
                                     <th className="pb-3 font-semibold text-right">Planned</th>
@@ -71,7 +153,7 @@ const Dashboard: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {data.map(item => (
+                                {activeData.map(item => (
                                     <tr key={item.name} className="group hover:bg-gray-50 transition-colors">
                                         <td className="py-3">
                                             <div className="font-medium text-text-main">{item.fullName}</div>
@@ -85,6 +167,16 @@ const Dashboard: React.FC = () => {
                                     </tr>
                                 ))}
                             </tbody>
+                            <tfoot className="border-t-2 border-gray-200 bg-gray-50 footer-sticky bottom-0">
+                                <tr className="font-bold">
+                                    <td className="py-4 pl-2 text-brand-primary">Total</td>
+                                    <td className="py-4 text-right text-brand-primary font-mono">{totalBudget.toLocaleString()}</td>
+                                    <td className="py-4 text-right text-brand-primary font-mono">{totalPlanned.toLocaleString()}</td>
+                                    <td className={clsx("py-4 text-right font-mono", totalVariance < 0 ? 'text-red-600' : 'text-green-600')}>
+                                        {totalVariance.toLocaleString()}
+                                    </td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>

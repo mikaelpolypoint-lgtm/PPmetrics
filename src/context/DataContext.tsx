@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { TEAMS_DEFAULT, PIS } from '../types';
-import type { Team, Topic, Feature, Story, EverhourEntry } from '../types';
+import type { Team, Topic, Feature, Story, EverhourEntry, SprintMetricDoc } from '../types';
 import { db } from '../lib/firebase';
 import { collection, getDocs, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { TEST_JIRA_DATA } from '../data/testJiraData';
@@ -34,6 +34,10 @@ interface DataContextType {
     importFeatures: (features: Feature[]) => void;
     importEverhour: (entries: EverhourEntry[], pi: string) => void;
 
+    // Sprint Metrics
+    sprintMetrics: SprintMetricDoc[];
+    saveSprintMetrics: (doc: SprintMetricDoc) => void;
+
     // Test Data
     seedTestData: () => void;
     loadTestJiraData: () => void;
@@ -54,6 +58,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [features, setFeatures] = useState<Feature[]>([]);
     const [stories, setStories] = useState<Story[]>([]);
     const [everhourEntries, setEverhourEntries] = useState<EverhourEntry[]>([]);
+    const [sprintMetrics, setSprintMetrics] = useState<SprintMetricDoc[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Load data from Firestore
@@ -75,21 +80,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await batch.commit();
                 }
 
-                // Topics
+                // Others
                 const topicsSnap = await getDocs(collection(db, 'topics'));
                 setTopics(topicsSnap.docs.map(d => d.data() as Topic));
 
-                // Features
                 const featuresSnap = await getDocs(collection(db, 'features'));
                 setFeatures(featuresSnap.docs.map(d => d.data() as Feature));
 
-                // Stories
                 const storiesSnap = await getDocs(collection(db, 'stories'));
                 setStories(storiesSnap.docs.map(d => d.data() as Story));
 
-                // Everhour
                 const everhourSnap = await getDocs(collection(db, 'everhourEntries'));
                 setEverhourEntries(everhourSnap.docs.map(d => d.data() as EverhourEntry));
+
+                const metricsSnap = await getDocs(collection(db, 'sprintMetrics'));
+                setSprintMetrics(metricsSnap.docs.map(d => d.data() as SprintMetricDoc));
 
             } catch (error) {
                 console.error("Error loading data:", error);
@@ -159,6 +164,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const deleteStory = async (id: string) => {
         setStories(prev => prev.filter(s => s.id !== id));
         await deleteDoc(doc(db, 'stories', id));
+    };
+
+    // Sprint Metrics Action
+    const saveSprintMetrics = async (metricDoc: SprintMetricDoc) => {
+        setSprintMetrics(prev => {
+            const index = prev.findIndex(d => d.id === metricDoc.id);
+            if (index >= 0) {
+                const newArr = [...prev];
+                newArr[index] = metricDoc;
+                return newArr;
+            }
+            return [...prev, metricDoc];
+        });
+        await setDoc(doc(db, 'sprintMetrics', metricDoc.id), metricDoc);
     };
 
     const importStories = async (newStories: Story[], pi: string) => {
@@ -273,9 +292,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <DataContext.Provider value={{
-            teams, topics, features, stories, everhourEntries, currentPI, setCurrentPI, isLoading,
+            teams, topics, features, stories, everhourEntries, currentPI, setCurrentPI, isLoading, sprintMetrics,
             updateTeam, addTeam, deleteTeam, addTopic, updateTopic, deleteTopic, addFeature, updateFeature, deleteFeature,
-            addStory, updateStory, deleteStory,
+            addStory, updateStory, deleteStory, saveSprintMetrics,
             importStories, importFeatures, importEverhour, seedTestData, loadTestJiraData
         }}>
             {children}

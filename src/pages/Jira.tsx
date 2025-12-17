@@ -15,7 +15,7 @@ interface SortConfig {
 }
 
 const Jira: React.FC = () => {
-    const { stories, importStories, importFeatures, currentPI, addStory, updateStory, deleteStory } = useData();
+    const { stories, teams, importStories, importFeatures, currentPI, addStory, updateStory, deleteStory } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const jsonInputRef = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string | null>(null);
@@ -467,58 +467,68 @@ const Jira: React.FC = () => {
                                 <Th column="since" label="Since" />
                                 <Th column="sp" label="SP" />
                                 <Th column="team" label="Team" />
+                                <th className="px-6 py-4 font-semibold select-none text-right">Planned (CHF)</th>
                                 <Th column="sprint" label="Sprint" />
                                 <Th column="epic" label="Feature" />
                                 <th className="px-6 py-4 font-semibold text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {processedStories.map(story => (
-                                <tr key={story.id} className="group hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-3 font-mono text-sm">
-                                        <a
-                                            href={`https://polypoint.atlassian.net/browse/${story.key}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-brand-secondary hover:text-brand-primary hover:underline"
-                                        >
-                                            {story.key}
-                                        </a>
-                                    </td>
-                                    <td className="px-6 py-3 text-text-main max-w-md truncate" title={story.name}>{story.name}</td>
-                                    <td className="px-6 py-3">
-                                        <span className={clsx(
-                                            "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border",
-                                            getStatusColor(story.status)
-                                        )}>
-                                            {story.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-3 text-text-muted text-xs">{story.since}</td>
-                                    <td className="px-6 py-3 text-text-main">{story.sp}</td>
-                                    <td className="px-6 py-3 text-text-main">{story.team}</td>
-                                    <td className="px-6 py-3 text-text-main">{story.sprint}</td>
-                                    <td className="px-6 py-3"><span className="badge badge-accent">{story.epic}</span></td>
-                                    <td className="px-6 py-3 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => handleOpenEditModal(story)}
-                                                className="p-1 text-gray-400 hover:text-brand-primary transition-colors"
-                                                title="Edit"
+                            {processedStories.map(story => {
+                                const teamObj = teams.find(t => t.name === story.team || (story.team === 'H1' && t.name === 'Hydrogen 1'));
+                                const spValue = teamObj ? teamObj.spValue : 0;
+                                const plannedValue = (story.sp || 0) * spValue;
+
+                                return (
+                                    <tr key={story.id} className="group hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-3 font-mono text-sm">
+                                            <a
+                                                href={`https://polypoint.atlassian.net/browse/${story.key}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-brand-secondary hover:text-brand-primary hover:underline"
                                             >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(story.id)}
-                                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                                                title="Delete"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                                                {story.key}
+                                            </a>
+                                        </td>
+                                        <td className="px-6 py-3 text-text-main max-w-md truncate" title={story.name}>{story.name}</td>
+                                        <td className="px-6 py-3">
+                                            <span className={clsx(
+                                                "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border",
+                                                getStatusColor(story.status)
+                                            )}>
+                                                {story.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-3 text-text-muted text-xs">{story.since}</td>
+                                        <td className="px-6 py-3 text-text-main">{story.sp}</td>
+                                        <td className="px-6 py-3 text-text-main">{story.team}</td>
+                                        <td className="px-6 py-3 text-right font-mono text-text-main">
+                                            {plannedValue > 0 ? plannedValue.toLocaleString('de-CH') : '-'}
+                                        </td>
+                                        <td className="px-6 py-3 text-text-main">{story.sprint}</td>
+                                        <td className="px-6 py-3"><span className="badge badge-accent">{story.epic}</span></td>
+                                        <td className="px-6 py-3 text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleOpenEditModal(story)}
+                                                    className="p-1 text-gray-400 hover:text-brand-primary transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(story.id)}
+                                                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                             {processedStories.length === 0 && (
                                 <tr>
                                     <td colSpan={8} className="text-center py-12 text-text-muted">

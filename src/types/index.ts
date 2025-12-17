@@ -57,6 +57,13 @@ export const TEAMS_DEFAULT: Team[] = [
 
 export const PIS = ['26.1', '26.2', '26.3', '26.4'];
 
+export interface SprintMetricDoc {
+  id: string; // `${teamId}_${pi}`
+  teamId: string;
+  pi: string;
+  values: Record<string, number>; // key: `${sprintIdx}-${metric}-${type}` e.g "0-dev-plan"
+}
+
 export const SPRINTS: Record<string, string[]> = {
   '26.1': ['26.1-S1', '26.1-S2', '26.1-S3', '26.1-S4', '26.1-S5', '26.1-IP'],
   '26.2': ['26.2-S1', '26.2-S2', '26.2-S3', '26.2-S4', '26.2-S5', '26.2-IP'],

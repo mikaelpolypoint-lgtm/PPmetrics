@@ -11,6 +11,8 @@ import Everhour from './pages/Everhour';
 import Details from './pages/Details';
 import Burndown from './pages/Burndown';
 import Metrics from './pages/Metrics';
+import SprintMetrics from './pages/SprintMetrics';
+import Monatscontrolling from './pages/Monatscontrolling';
 import { PIS } from './types';
 
 // Helper to sync URL PI with Context PI
@@ -47,6 +49,8 @@ const AppRoutes: React.FC = () => {
             <Route path="everhour" element={<Everhour />} />
             <Route path="details" element={<Details />} />
             <Route path="metrics" element={<Metrics />} />
+            <Route path="sprint-metrics" element={<SprintMetrics />} />
+            <Route path="monatscontrolling" element={<Monatscontrolling />} />
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>
         </Layout>

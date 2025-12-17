@@ -2,18 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { PIS } from '../types';
-import {
-    LayoutDashboard,
-    Table,
-    Users,
-    PieChart,
-    BarChart3,
-    Layers,
-    FileText,
-    Clock,
-    Settings,
-    Database
-} from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Settings, Database, Clock, Layers, FileText, Activity, PieChart, Table } from 'lucide-react';
 import clsx from 'clsx';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -37,7 +26,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { path: `/${currentPI}/topics`, label: 'Topics', icon: Layers },
         { path: `/${currentPI}/features`, label: 'Features', icon: Database },
         { path: `/${currentPI}/teams`, label: 'Teams', icon: Users },
-        { path: `/${currentPI}/metrics`, label: 'Metrics', icon: BarChart3 },
+        { path: `/${currentPI}/sprint-metrics`, label: 'Sprint Metrics', icon: Activity },
+        { path: `/${currentPI}/monatscontrolling`, label: 'Monatscontrolling', icon: PieChart },
+        { path: `/${currentPI}/metrics`, label: 'Metric Config', icon: BarChart3 },
     ];
 
     return (

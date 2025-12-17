@@ -5,7 +5,7 @@ import type { Team } from '../types';
 import { Edit2, Save, X, Trash2, Plus } from 'lucide-react';
 
 const Teams: React.FC = () => {
-    const { teams, updateTeam, addTeam, deleteTeam, currentPI } = useData();
+    const { teams, updateTeam, addTeam, deleteTeam, currentPI, stories } = useData();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<Team | null>(null);
     const [isAdding, setIsAdding] = useState(false);
@@ -65,6 +65,20 @@ const Teams: React.FC = () => {
         }
     };
 
+    const getTeamMetrics = (teamName: string, spValue: number) => {
+        // Filter stories for this team in current PI
+        // Handle "Hydrogen 1" vs "H1" mismatch if present
+        const teamStories = stories.filter(s =>
+            s.pi === currentPI &&
+            (s.team === teamName || (teamName === 'Hydrogen 1' && s.team === 'H1'))
+        );
+
+        const spPlanned = teamStories.reduce((sum, s) => sum + (s.sp || 0), 0);
+        const pipPlan = spPlanned * spValue;
+
+        return { spPlanned, pipPlan };
+    };
+
     return (
         <div className="space-y-6">
             <PageHeader
@@ -83,7 +97,7 @@ const Teams: React.FC = () => {
             {isAdding && (
                 <div className="card mb-6 border-brand-accent/30">
                     <h3 className="text-lg font-bold text-brand-primary mb-4">Add New Team</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                         <div>
                             <label className="block text-xs text-text-muted mb-1">Team Name</label>
                             <input
@@ -123,6 +137,9 @@ const Teams: React.FC = () => {
                                 onChange={e => handleAddChange('hourlyRate', Number(e.target.value))}
                             />
                         </div>
+                        <div>
+                            {/* Spacer or additional fields */}
+                        </div>
                     </div>
                     <div className="flex justify-end gap-2">
                         <button onClick={() => setIsAdding(false)} className="btn btn-secondary">Cancel</button>
@@ -140,6 +157,8 @@ const Teams: React.FC = () => {
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">SP Value (CHF)</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">PIB Budget</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Hourly Rate</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">SP Planned</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">PIP Plan (CHF)</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider w-32 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -179,6 +198,12 @@ const Teams: React.FC = () => {
                                                     onChange={e => handleChange('hourlyRate', Number(e.target.value))}
                                                 />
                                             </td>
+                                            <td className="px-6 py-3">
+                                                <span className="text-text-muted italic text-sm">Calculated</span>
+                                            </td>
+                                            <td className="px-6 py-3">
+                                                <span className="text-text-muted italic text-sm">Calculated</span>
+                                            </td>
                                             <td className="px-6 py-3 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     <button onClick={handleSave} className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors">
@@ -196,6 +221,12 @@ const Teams: React.FC = () => {
                                             <td className="px-6 py-4 text-text-main">{team.spValue} CHF</td>
                                             <td className="px-6 py-4 text-text-main">{team.pibBudget} CHF</td>
                                             <td className="px-6 py-4 text-text-main">{team.hourlyRate} CHF/h</td>
+                                            <td className="px-6 py-4 text-text-main font-mono">
+                                                {getTeamMetrics(team.name, team.spValue).spPlanned}
+                                            </td>
+                                            <td className="px-6 py-4 text-text-main font-mono bg-brand-primary/5">
+                                                {getTeamMetrics(team.name, team.spValue).pipPlan.toLocaleString()} CHF
+                                            </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button onClick={() => handleEdit(team)} className="p-1.5 text-text-muted hover:text-brand-accent hover:bg-gray-50 rounded transition-colors">
