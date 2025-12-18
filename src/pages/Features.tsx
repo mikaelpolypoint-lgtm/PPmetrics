@@ -170,7 +170,7 @@ const Features: React.FC = () => {
                             {filteredFeatures.map(feature => {
                                 const relatedStories = stories.filter(s => s.epic === feature.jiraId && s.pi === currentPI);
                                 const plannedPIP = relatedStories.reduce((sum, s) => {
-                                    const team = teams.find(t => t.name === s.team || (s.team === 'H1' && t.name === 'Hydrogen 1'));
+                                    const team = teams.find(t => t.name === s.team || (s.team === 'H1' && t.name === 'H1'));
                                     const spValue = team ? team.spValue : 0;
                                     return sum + ((s.sp || 0) * spValue);
                                 }, 0);

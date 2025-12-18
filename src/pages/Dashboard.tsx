@@ -51,12 +51,12 @@ const Dashboard: React.FC = () => {
 
             // Filter stories by team if needed
             if (teamFilter !== 'all') {
-                featureStories = featureStories.filter(s => s.team === teamFilter || (teamFilter === 'Hydrogen 1' && s.team === 'H1'));
+                featureStories = featureStories.filter(s => s.team === teamFilter || (teamFilter === 'H1' && s.team === 'H1'));
             }
 
             // Sum up value of these stories
             const featureCost = featureStories.reduce((sum, story) => {
-                const teamObj = teams.find(t => t.name === story.team || (story.team === 'H1' && t.name === 'Hydrogen 1'));
+                const teamObj = teams.find(t => t.name === story.team || (story.team === 'H1' && t.name === 'H1'));
                 const spValue = teamObj ? teamObj.spValue : 0;
                 return sum + ((story.sp || 0) * spValue);
             }, 0);

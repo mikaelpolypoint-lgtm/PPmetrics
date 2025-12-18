@@ -3,7 +3,6 @@ export interface Team {
   name: string;
   spValue: number; // CHF
   pibBudget: number;
-  hourlyRate: number;
 }
 
 export interface Topic {
@@ -50,10 +49,10 @@ export interface EverhourEntry {
 }
 
 export const TEAMS_DEFAULT: Team[] = [
-  { id: 'neon', name: 'Neon', spValue: 0, pibBudget: 0, hourlyRate: 0 },
-  { id: 'h1', name: 'Hydrogen 1', spValue: 0, pibBudget: 0, hourlyRate: 0 },
-  { id: 'zn2c', name: 'Zn2C', spValue: 0, pibBudget: 0, hourlyRate: 0 },
-  { id: 'tungsten', name: 'Tungsten', spValue: 0, pibBudget: 0, hourlyRate: 0 },
+  { id: 'neon', name: 'Neon', spValue: 0, pibBudget: 0 },
+  { id: 'h1', name: 'H1', spValue: 0, pibBudget: 0 },
+  { id: 'zn2c', name: 'Zn2C', spValue: 0, pibBudget: 0 },
+  { id: 'tungsten', name: 'Tungsten', spValue: 0, pibBudget: 0 },
 ];
 
 export const PIS = ['26.1', '26.2', '26.3', '26.4'];

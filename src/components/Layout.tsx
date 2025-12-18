@@ -31,6 +31,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { path: `/${currentPI}/metrics`, label: 'Metric Config', icon: BarChart3 },
     ];
 
+    const capacityNavItems = [
+        { path: `/${currentPI}/capacity-dashboard`, label: 'Capacity Dashboard', icon: LayoutDashboard },
+        { path: `/${currentPI}/capacity-developers`, label: 'Developers', icon: Users },
+        { path: `/${currentPI}/capacity-availabilities`, label: 'Availabilities', icon: Clock },
+        { path: `/${currentPI}/capacity-details`, label: 'Details', icon: FileText },
+        { path: `/${currentPI}/capacity-changes`, label: 'Changes', icon: Activity },
+        { path: `/${currentPI}/capacity-improvements`, label: 'Improvements', icon: Layers },
+    ];
+
     return (
         <div className="flex h-screen overflow-hidden bg-bg-main">
             {/* Sidebar */}
@@ -64,6 +73,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <nav className="flex-1 overflow-y-auto py-4 px-3">
                     <div className="flex flex-col gap-1">
                         {navItems.map((item) => (
+                            <NavLink
+                                key={item.path}
+                                to={item.path}
+                                className={({ isActive }) => clsx(
+                                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                                    isActive
+                                        ? "bg-brand-primary/5 text-brand-primary font-bold shadow-sm"
+                                        : "text-text-muted hover:text-brand-primary hover:bg-gray-50"
+                                )}
+                            >
+                                <item.icon size={18} />
+                                {item.label}
+                            </NavLink>
+                        ))}
+
+                        <div className="my-2 border-t border-gray-200" />
+
+                        {capacityNavItems.map((item) => (
                             <NavLink
                                 key={item.path}
                                 to={item.path}

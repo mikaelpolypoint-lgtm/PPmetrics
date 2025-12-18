@@ -85,7 +85,7 @@ const Monatscontrolling: React.FC = () => {
         teams.forEach(t => {
             const teamStories = stories.filter(s =>
                 s.pi === currentPI &&
-                (s.team === t.name || (t.name === 'Hydrogen 1' && s.team === 'H1'))
+                (s.team === t.name || (t.name === 'H1' && s.team === 'H1'))
             );
             const totalPlannedSP = teamStories.reduce((sum, s) => sum + (s.sp || 0), 0);
             let val: string | number = '-';

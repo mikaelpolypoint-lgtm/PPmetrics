@@ -114,7 +114,7 @@ const SprintMetrics: React.FC = () => {
         if (!activeTeam) return '';
         const teamStories = stories.filter(s =>
             s.pi === currentPI &&
-            (s.team === activeTeam.name || (activeTeam.name === 'Hydrogen 1' && s.team === 'H1'))
+            (s.team === activeTeam.name || (activeTeam.name === 'H1' && s.team === 'H1'))
         );
         const totalPlannedSP = teamStories.reduce((sum, s) => sum + (s.sp || 0), 0);
         if (totalPlannedSP === 0) return '0%';

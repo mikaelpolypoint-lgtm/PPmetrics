@@ -486,7 +486,7 @@ const Jira: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {processedStories.map(story => {
-                                const teamObj = teams.find(t => t.name === story.team || (story.team === 'H1' && t.name === 'Hydrogen 1'));
+                                const teamObj = teams.find(t => t.name === story.team || (story.team === 'H1' && t.name === 'H1'));
                                 const spValue = teamObj ? teamObj.spValue : 0;
                                 const plannedValue = (story.sp || 0) * spValue;
 
