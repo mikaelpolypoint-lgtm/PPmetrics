@@ -59,12 +59,16 @@ const AppRoutes: React.FC = () => {
   );
 };
 
+import AuthGate from './components/AuthGate';
+
 function App() {
   return (
     <DataProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <AuthGate>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthGate>
     </DataProvider>
   );
 }
