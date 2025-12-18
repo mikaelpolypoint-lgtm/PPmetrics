@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
 import type { Story, Feature } from '../types';
 import Papa from 'papaparse';
-import { Upload, FileText, AlertCircle, Plus, Edit2, Trash2, X, Save, Download, Filter, ArrowUp, ArrowDown, FileJson } from 'lucide-react';
+import { Upload, FileText, AlertCircle, Plus, Edit2, Trash2, X, Save, Download, Filter, ArrowUp, ArrowDown, FileJson, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
 
 type SortDirection = 'asc' | 'desc';
@@ -373,6 +373,17 @@ const Jira: React.FC = () => {
                 description="Import, manage, and analyze Jira stories."
                 actions={
                     <div className="flex items-center gap-2">
+                        <a
+                            href="https://polypoint.atlassian.net/issues/?filter=12345" // TODO: Update with real filter ID
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-outline flex items-center gap-2 text-brand-primary border-brand-primary/20 hover:bg-brand-primary/5 mr-2"
+                            title="Open Source Filter in Jira"
+                        >
+                            <ExternalLink size={18} />
+                            Source (Live Jira)
+                        </a>
+
                         <button onClick={handleOpenAddModal} className="btn btn-primary">
                             <Plus size={18} /> Add
                         </button>

@@ -38,6 +38,7 @@ export interface Story {
   epic: string; // Parent key
   pi: string;
   since?: string; // Status Category Changed Date (dd.mm.yy)
+  plannedCHF?: number;
 }
 
 export interface EverhourEntry {
