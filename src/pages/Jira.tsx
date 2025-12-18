@@ -41,7 +41,7 @@ const Jira: React.FC = () => {
     // Helper: Status Normalization
     const normalizeStatus = (status: string) => {
         const s = status.toLowerCase();
-        if (s === 'done') return 'Done';
+        if (s === 'done' || s === 'closed') return 'Done';
         if (['in testing', 'ready for testing', 'ready design review'].includes(s)) return 'Testing';
         if (s === 'ready for code review') return 'Code Review';
         if (s === 'in development') return 'Started';
