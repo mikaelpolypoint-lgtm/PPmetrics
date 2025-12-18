@@ -198,18 +198,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const importFeatures = async (newFeatures: Feature[]) => {
-        // We want to merge, not replace all features, because features might be created manually too.
+        // Filter out features that already exist (matching by jiraId) because we want to preserve 
+        // linked topics. We only add features that are not yet present in the system.
+        const existingJiraIds = new Set(features.map(f => f.jiraId));
+        const featuresToInsert = newFeatures.filter(f => !existingJiraIds.has(f.jiraId));
 
-        // Let's just use setDoc with merge: true implicitly by overwriting or checking existence.
+        if (featuresToInsert.length === 0) return;
 
-        setFeatures(prev => {
-            // A simple approach: Filter out existing features that match IDs of new features, then append new ones.
-            const newIds = new Set(newFeatures.map(f => f.id));
-            return [...prev.filter(f => !newIds.has(f.id)), ...newFeatures];
-        });
+        setFeatures(prev => [...prev, ...featuresToInsert]);
 
         const batch = writeBatch(db);
-        newFeatures.forEach(f => {
+        featuresToInsert.forEach(f => {
             batch.set(doc(db, 'features', f.id), f);
         });
         await batch.commit();
