@@ -3,6 +3,12 @@ import PageHeader from '../components/PageHeader';
 
 const SPRINTS = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Sprint 4', 'Sprint 5', 'Sprint 6'];
 
+
+interface MetricResult {
+    display: string | number;
+    breakdown: { team: string; value: string | number }[];
+}
+
 const Monatscontrolling: React.FC = () => {
     const { teams, stories, currentPI, sprintMetrics } = useData();
 
@@ -18,10 +24,10 @@ const Monatscontrolling: React.FC = () => {
     // --- Calculation Helpers ---
 
     // 1. Reported % Hours (Average)
-    // Formula: Avg(Team1Ratio, Team2Ratio, ...)
-    // TeamRatio = (TotalActual / TotalPlan) * 100
-    const calculateAvgReportedRatio = (sprintIdx: number) => {
+    const calculateAvgReportedRatio = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
         const ratios: number[] = [];
+
         teams.forEach(t => {
             const devPlan = getVal(t.id, sprintIdx, 'dev', 'plan');
             const maintainPlan = getVal(t.id, sprintIdx, 'maintain', 'plan');
@@ -35,127 +41,165 @@ const Monatscontrolling: React.FC = () => {
             const absenceAct = getVal(t.id, sprintIdx, 'absence', 'actual');
             const totalAct = devAct + maintainAct + manageAct + absenceAct;
 
+            let val: string | number = '-';
             if (totalPlan > 0) {
-                ratios.push((totalAct / totalPlan) * 100);
+                const ratio = (totalAct / totalPlan) * 100;
+                ratios.push(ratio);
+                val = ratio.toFixed(0) + '%';
             }
+            breakdown.push({ team: t.name, value: val });
         });
 
-        if (ratios.length === 0) return '-';
+        if (ratios.length === 0) return { display: '-', breakdown };
         const sum = ratios.reduce((a, b) => a + b, 0);
-        return (sum / ratios.length).toFixed(0) + '%';
+        return { display: (sum / ratios.length).toFixed(0) + '%', breakdown };
     };
 
     // 2. SP Acceptance Ratio (Average)
-    // TeamRatio = (ActualSP / PlanSP) * 100
-    const calculateAvgSPAcceptanceRatio = (sprintIdx: number) => {
+    const calculateAvgSPAcceptanceRatio = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
         const ratios: number[] = [];
+
         teams.forEach(t => {
             const plan = getVal(t.id, sprintIdx, 'sp', 'plan');
             const actual = getVal(t.id, sprintIdx, 'sp', 'actual');
+            let val: string | number = '-';
             if (plan > 0) {
-                ratios.push((actual / plan) * 100);
+                const ratio = (actual / plan) * 100;
+                ratios.push(ratio);
+                val = ratio.toFixed(0) + '%';
             }
+            breakdown.push({ team: t.name, value: val });
         });
 
-        if (ratios.length === 0) return '-';
+        if (ratios.length === 0) return { display: '-', breakdown };
         const sum = ratios.reduce((a, b) => a + b, 0);
-        return (sum / ratios.length).toFixed(0) + '%';
+        return { display: (sum / ratios.length).toFixed(0) + '%', breakdown };
     };
 
     // 3. PI Progress (Average)
-    // TeamProgress = (SumActualSPSoFar / TotalPlannedSP_PI) * 100
-    const calculateAvgPIProgress = (sprintIdx: number) => {
+    const calculateAvgPIProgress = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
         const progresses: number[] = [];
+
         teams.forEach(t => {
-            // Total Planned SP for this team in this PI
             const teamStories = stories.filter(s =>
                 s.pi === currentPI &&
                 (s.team === t.name || (t.name === 'Hydrogen 1' && s.team === 'H1'))
             );
             const totalPlannedSP = teamStories.reduce((sum, s) => sum + (s.sp || 0), 0);
+            let val: string | number = '-';
 
             if (totalPlannedSP > 0) {
                 let sumActual = 0;
                 for (let i = 0; i <= sprintIdx; i++) {
                     sumActual += getVal(t.id, i, 'sp', 'actual');
                 }
-                progresses.push((sumActual / totalPlannedSP) * 100);
+                const prog = (sumActual / totalPlannedSP) * 100;
+                progresses.push(prog);
+                val = prog.toFixed(0) + '%';
             }
+            breakdown.push({ team: t.name, value: val });
         });
 
-        if (progresses.length === 0) return '-';
+        if (progresses.length === 0) return { display: '-', breakdown };
         const sum = progresses.reduce((a, b) => a + b, 0);
-        return (sum / progresses.length).toFixed(0) + '%';
+        return { display: (sum / progresses.length).toFixed(0) + '%', breakdown };
     };
 
     // 4. Issue Acceptance Ratio (Average)
-    const calculateAvgIssueRatio = (sprintIdx: number) => {
+    const calculateAvgIssueRatio = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
         const ratios: number[] = [];
         teams.forEach(t => {
             const plan = getVal(t.id, sprintIdx, 'issues', 'plan');
             const actual = getVal(t.id, sprintIdx, 'issues', 'actual');
+            let val: string | number = '-';
             if (plan > 0) {
-                ratios.push((actual / plan) * 100);
+                const ratio = (actual / plan) * 100;
+                ratios.push(ratio);
+                val = ratio.toFixed(0) + '%';
             }
+            breakdown.push({ team: t.name, value: val });
         });
-        if (ratios.length === 0) return '-';
+        if (ratios.length === 0) return { display: '-', breakdown };
         const sum = ratios.reduce((a, b) => a + b, 0);
-        return (sum / ratios.length).toFixed(0) + '%';
+        return { display: (sum / ratios.length).toFixed(0) + '%', breakdown };
     };
 
     // 5. Defect Detection Ratio (Average)
-    // This is explicitly entered in SprintMetrics as a percent value (e.g., 90)
-    // Currently stored as a number.
-    const calculateAvgDefectRatio = (sprintIdx: number) => {
+    const calculateAvgDefectRatio = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
         const values: number[] = [];
         teams.forEach(t => {
-            // Check if we have a value. Usually 0 is a valid value, but if it's missing (0 default), we might want to exclude? 
-            // But getVal returns 0 for missing. Let's assume if it's 0 it counts as 0 unless ALL are 0?
-            // Actually, let's just average whatever is there.
-            // Wait, 'defectRatio' is stored as the value entered.
             const val = getVal(t.id, sprintIdx, 'defectRatio', 'actual');
-            // If we want to check if it was actually entered, we'd need to check the raw map. 
-            // For now, let's just average.
             values.push(val);
+            breakdown.push({ team: t.name, value: val + '%' });
         });
         const sum = values.reduce((a, b) => a + b, 0);
-        return (sum / 4).toFixed(0) + '%';
+        return { display: (sum / 4).toFixed(0) + '%', breakdown };
     };
 
     // 6. Cycle Time Bugs (Average)
-    const calculateAvgCycleTimeBugs = (sprintIdx: number) => {
-        const values = teams.map(t => getVal(t.id, sprintIdx, 'cycleTimeBugs', 'actual'));
+    const calculateAvgCycleTimeBugs = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
+        const values: number[] = [];
+        teams.forEach(t => {
+            const val = getVal(t.id, sprintIdx, 'cycleTimeBugs', 'actual');
+            values.push(val);
+            breakdown.push({ team: t.name, value: val });
+        });
         const sum = values.reduce((a, b) => a + b, 0);
-        return (sum / 4).toFixed(1);
+        return { display: (sum / 4).toFixed(1), breakdown };
     };
 
     // 7. Cycle Time Collabs (Average)
-    const calculateAvgCycleTimeCollabs = (sprintIdx: number) => {
-        const values = teams.map(t => getVal(t.id, sprintIdx, 'cycleTimeCollabs', 'actual'));
+    const calculateAvgCycleTimeCollabs = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
+        const values: number[] = [];
+        teams.forEach(t => {
+            const val = getVal(t.id, sprintIdx, 'cycleTimeCollabs', 'actual');
+            values.push(val);
+            breakdown.push({ team: t.name, value: val });
+        });
         const sum = values.reduce((a, b) => a + b, 0);
-        return (sum / 4).toFixed(1);
+        return { display: (sum / 4).toFixed(1), breakdown };
     };
 
     // --- Sum Calculations ---
 
     // 8. Bugs Created (Sum)
-    const calculateSumBugsCreated = (sprintIdx: number) => {
-        const sum = teams.reduce((acc, t) => acc + getVal(t.id, sprintIdx, 'bugsCreated', 'actual'), 0);
-        return sum;
+    const calculateSumBugsCreated = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
+        const sum = teams.reduce((acc, t) => {
+            const val = getVal(t.id, sprintIdx, 'bugsCreated', 'actual');
+            breakdown.push({ team: t.name, value: val });
+            return acc + val;
+        }, 0);
+        return { display: sum, breakdown };
     };
 
     // 9. Bugs Closed (Sum)
-    const calculateSumBugsClosed = (sprintIdx: number) => {
-        const sum = teams.reduce((acc, t) => acc + getVal(t.id, sprintIdx, 'bugsClosed', 'actual'), 0);
-        return sum;
+    const calculateSumBugsClosed = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
+        const sum = teams.reduce((acc, t) => {
+            const val = getVal(t.id, sprintIdx, 'bugsClosed', 'actual');
+            breakdown.push({ team: t.name, value: val });
+            return acc + val;
+        }, 0);
+        return { display: sum, breakdown };
     };
 
     // 10. Bugs Open (Sum)
-    const calculateSumBugsOpen = (sprintIdx: number) => {
-        const sum = teams.reduce((acc, t) => acc + getVal(t.id, sprintIdx, 'bugsOpen', 'actual'), 0);
-        return sum;
+    const calculateSumBugsOpen = (sprintIdx: number): MetricResult => {
+        const breakdown: { team: string; value: string | number }[] = [];
+        const sum = teams.reduce((acc, t) => {
+            const val = getVal(t.id, sprintIdx, 'bugsOpen', 'actual');
+            breakdown.push({ team: t.name, value: val });
+            return acc + val;
+        }, 0);
+        return { display: sum, breakdown };
     };
-
 
     const rows = [
         { label: 'Reported % hours (Avg)', calc: calculateAvgReportedRatio, highlight: true },
@@ -200,9 +244,7 @@ const Monatscontrolling: React.FC = () => {
                                         {row.label}
                                     </td>
                                     {SPRINTS.map((_, sIdx) => (
-                                        <td key={sIdx} className="px-6 py-4 text-center border-l border-gray-100 font-mono text-gray-600">
-                                            {row.calc(sIdx)}
-                                        </td>
+                                        <TooltipCell key={sIdx} result={row.calc(sIdx)} />
                                     ))}
                                 </tr>
                             ))}
@@ -214,4 +256,26 @@ const Monatscontrolling: React.FC = () => {
     );
 };
 
+const TooltipCell: React.FC<{ result: MetricResult }> = ({ result }) => (
+    <td className="px-6 py-4 text-center border-l border-gray-100 font-mono text-gray-600 relative group cursor-pointer hover:bg-white transition-colors">
+        <span className="border-b border-dashed border-gray-300 pb-0.5">{result.display}</span>
+
+        {/* Tooltip */}
+        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 bg-gray-900/95 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 backdrop-blur-sm pointer-events-none transform translate-y-1 group-hover:translate-y-0">
+            <div className="p-2 space-y-1">
+                <div className="font-semibold border-b border-gray-700 pb-1 mb-1 text-gray-300 text-[10px] uppercase tracking-wide">Breakdown</div>
+                {result.breakdown.map((item, i) => (
+                    <div key={i} className="flex justify-between items-center text-gray-200">
+                        <span>{item.team}:</span>
+                        <span className="font-mono font-medium text-white">{item.value}</span>
+                    </div>
+                ))}
+            </div>
+            {/* Arrow */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-4 border-transparent border-t-gray-900/95"></div>
+        </div>
+    </td>
+);
+
 export default Monatscontrolling;
+

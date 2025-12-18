@@ -296,26 +296,26 @@ const SprintMetrics: React.FC = () => {
                             <span className="text-xs font-mono text-text-muted uppercase tracking-wider">Metrics</span>
                         </div>
                         <div className="overflow-x-auto">
-                            <MetricTable>
-                                <InputRow label="Bugs created in sprint" sprints={SPRINTS}
+                            <SingleMetricTable>
+                                <SingleInputRow label="Bugs created in sprint" sprints={SPRINTS}
                                     getValue={(i, type) => getVal(i, 'bugsCreated', type)}
                                     onChange={(i, type, v) => updateMetric(i, 'bugsCreated', type, v)} />
-                                <InputRow label="Bugs closed in sprint" sprints={SPRINTS}
+                                <SingleInputRow label="Bugs closed in sprint" sprints={SPRINTS}
                                     getValue={(i, type) => getVal(i, 'bugsClosed', type)}
                                     onChange={(i, type, v) => updateMetric(i, 'bugsClosed', type, v)} />
-                                <InputRow label="Bugs currently open" sprints={SPRINTS}
+                                <SingleInputRow label="Bugs currently open" sprints={SPRINTS}
                                     getValue={(i, type) => getVal(i, 'bugsOpen', type)}
                                     onChange={(i, type, v) => updateMetric(i, 'bugsOpen', type, v)} />
-                                <InputRow label="Defect detection ratio" sprints={SPRINTS}
+                                <SingleInputRow label="Defect detection ratio" sprints={SPRINTS}
                                     getValue={(i, type) => getVal(i, 'defectRatio', type)}
                                     onChange={(i, type, v) => updateMetric(i, 'defectRatio', type, v)} />
-                                <InputRow label="Cycle time bugs" sprints={SPRINTS}
+                                <SingleInputRow label="Cycle time bugs" sprints={SPRINTS}
                                     getValue={(i, type) => getVal(i, 'cycleTimeBugs', type)}
                                     onChange={(i, type, v) => updateMetric(i, 'cycleTimeBugs', type, v)} />
-                                <InputRow label="Cycle time collabs" sprints={SPRINTS}
+                                <SingleInputRow label="Cycle time collabs" sprints={SPRINTS}
                                     getValue={(i, type) => getVal(i, 'cycleTimeCollabs', type)}
                                     onChange={(i, type, v) => updateMetric(i, 'cycleTimeCollabs', type, v)} />
-                            </MetricTable>
+                            </SingleMetricTable>
                         </div>
                     </div>
                 </div>
@@ -399,6 +399,48 @@ const CalculatedRow: React.FC<{
                 <div className="py-3 px-2 text-center text-gray-700 w-full">
                     {getValue(idx) || '-'}
                 </div>
+            </td>
+        ))}
+    </tr>
+);
+
+const SingleMetricTable: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <table className="w-full text-sm text-left border-collapse">
+        <thead>
+            <tr className="bg-gray-50/80 border-b border-gray-200">
+                <th className="px-6 py-4 font-bold text-gray-700 w-64 min-w-[200px] bg-gray-50/80 sticky left-0 z-10">Metric</th>
+                {SPRINTS.map(s => (
+                    <th key={s} className="px-2 py-3 font-semibold text-gray-600 text-center border-l border-gray-200 min-w-[100px]">
+                        <div className="text-xs uppercase tracking-wide text-brand-secondary">{s}</div>
+                    </th>
+                ))}
+            </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+            {children}
+        </tbody>
+    </table>
+);
+
+const SingleInputRow: React.FC<{
+    label: string,
+    sprints: string[],
+    getValue: (idx: number, type: MetricType) => number | '',
+    onChange: (idx: number, type: MetricType, val: string) => void
+}> = ({ label, sprints, getValue, onChange }) => (
+    <tr className="group hover:bg-gray-50/50 transition-colors">
+        <td className="px-6 py-3 font-medium text-gray-700 border-r border-gray-100 sticky left-0 z-10 bg-white group-hover:bg-gray-50/50">
+            {label}
+        </td>
+        {sprints.map((_, idx) => (
+            <td key={idx} className="p-0 border-l border-gray-100 h-full relative">
+                <input
+                    type="number"
+                    value={getValue(idx, 'actual')}
+                    onChange={(e) => onChange(idx, 'actual', e.target.value)}
+                    className="w-full h-full text-center py-3 bg-transparent focus:outline-none focus:bg-brand-primary/5 focus:text-brand-primary transition-colors placeholder-gray-200 text-gray-600 spin-button-none"
+                    placeholder="-"
+                />
             </td>
         ))}
     </tr>
