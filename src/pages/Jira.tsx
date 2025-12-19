@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
 import type { Story, Feature } from '../types';
 import Papa from 'papaparse';
-import { Upload, FileText, AlertCircle, Plus, Edit2, Trash2, X, Save, Download, Filter, ArrowUp, ArrowDown, FileJson, ExternalLink } from 'lucide-react';
+import { Upload, FileText, AlertCircle, Plus, Edit2, Trash2, X, Save, Download, Filter, ArrowUp, ArrowDown, FileJson, ExternalLink, Settings } from 'lucide-react';
 import clsx from 'clsx';
 import { CapacityService } from '../services/CapacityService';
 
@@ -15,11 +15,47 @@ interface SortConfig {
     direction: SortDirection;
 }
 
+// Column Definitions
+type ColumnKey = 'key' | 'summary' | 'status' | 'team' | 'sp' | 'planned' | 's1' | 's2' | 's3' | 's4' | 's5' | 'ip' | 'total' | 'sprint' | 'epic' | 'since';
+
+interface ColumnDef {
+    key: ColumnKey;
+    label: string;
+    align: 'left' | 'right';
+    sortKey?: SortKey;
+    defaultVisible: boolean;
+}
+
+const COLUMN_DEFS: ColumnDef[] = [
+    { key: 'key', label: 'Key', align: 'left', sortKey: 'key', defaultVisible: true },
+    { key: 'summary', label: 'Summary', align: 'left', sortKey: 'name', defaultVisible: true },
+    { key: 'status', label: 'Status', align: 'left', sortKey: 'statusColor', defaultVisible: true },
+    { key: 'team', label: 'Team', align: 'left', sortKey: 'team', defaultVisible: true },
+    { key: 'sp', label: 'SP', align: 'left', sortKey: 'sp', defaultVisible: true },
+    { key: 'planned', label: 'Planned (CHF)', align: 'right', defaultVisible: true },
+    { key: 's1', label: 'S1', align: 'right', defaultVisible: true },
+    { key: 's2', label: 'S2', align: 'right', defaultVisible: true },
+    { key: 's3', label: 'S3', align: 'right', defaultVisible: true },
+    { key: 's4', label: 'S4', align: 'right', defaultVisible: true },
+    { key: 's5', label: 'S5', align: 'right', defaultVisible: true },
+    { key: 'ip', label: 'IP', align: 'right', defaultVisible: true },
+    { key: 'total', label: 'Total', align: 'right', defaultVisible: true },
+    { key: 'sprint', label: 'Sprint', align: 'left', sortKey: 'sprint', defaultVisible: false },
+    { key: 'epic', label: 'Epic', align: 'left', sortKey: 'epic', defaultVisible: false },
+    { key: 'since', label: 'Since', align: 'left', sortKey: 'since', defaultVisible: false },
+];
+
 const Jira: React.FC = () => {
     const { stories, teams, everhourEntries, importStories, importFeatures, currentPI, addStory, updateStory, deleteStory } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const jsonInputRef = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string | null>(null);
+
+    // Column Visibility State
+    const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(() =>
+        new Set(COLUMN_DEFS.filter(c => c.defaultVisible).map(c => c.key))
+    );
+    const [isColumnDropdownOpen, setIsColumnDropdownOpen] = useState(false);
 
     // Filter State
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -41,6 +77,18 @@ const Jira: React.FC = () => {
     const currentStories = stories.filter(s => s.pi === currentPI);
     const uniqueFeatures = Array.from(new Set(currentStories.map(s => s.epic).filter(Boolean)));
     const uniqueTeams = Array.from(new Set(currentStories.map(s => s.team).filter(Boolean)));
+
+    const toggleColumn = (key: ColumnKey) => {
+        setVisibleColumns(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) {
+                next.delete(key);
+            } else {
+                next.add(key);
+            }
+            return next;
+        });
+    };
 
     // Load Capacity and Calculate Rates
     useEffect(() => {
@@ -426,6 +474,42 @@ const Jira: React.FC = () => {
                 description="Import, manage, and analyze Jira stories."
                 actions={
                     <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsColumnDropdownOpen(!isColumnDropdownOpen)}
+                                className="btn btn-secondary flex items-center gap-2"
+                                title="Select Columns"
+                            >
+                                <Settings size={18} /> Columns
+                            </button>
+                            {isColumnDropdownOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="text-xs font-semibold text-gray-500 mb-2 px-2 uppercase tracking-wider">Visible Columns</div>
+                                    <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                                        {COLUMN_DEFS.map(col => (
+                                            <label key={col.key} className="flex items-center gap-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer text-sm">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={visibleColumns.has(col.key)}
+                                                    onChange={() => toggleColumn(col.key)}
+                                                    className="rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                                                />
+                                                <span className="text-gray-700">{col.label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {isColumnDropdownOpen && (
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setIsColumnDropdownOpen(false)}
+                            />
+                        )}
+
+                        <div className="h-8 w-px bg-gray-300 mx-2" />
+
                         <a
                             href="https://polypoint.atlassian.net/issues/?filter=12345" // TODO: Update with real filter ID
                             target="_blank"
@@ -525,22 +609,14 @@ const Jira: React.FC = () => {
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-bg-surface backdrop-blur sticky top-0 z-10 shadow-sm">
                             <tr className="border-b border-gray-200 text-text-muted text-xs uppercase tracking-wider">
-                                <Th column="key" label="Key" />
-                                <Th column="name" label="Summary" />
-                                <Th column="statusColor" label="Status" />
-                                <Th column="team" label="Team" />
-                                <Th column="sp" label="SP" />
-                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">Planned (CHF)</th>
-
-                                {/* Sprint Costs */}
-                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S1</th>
-                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S2</th>
-                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S3</th>
-                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S4</th>
-                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S5</th>
-                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">IP</th>
-                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">Total</th>
-
+                                {COLUMN_DEFS.filter(col => visibleColumns.has(col.key)).map(col => (
+                                    <Th
+                                        key={col.key}
+                                        column={col.sortKey ? (col.sortKey as SortKey) : undefined}
+                                        label={col.label}
+                                        align={col.align}
+                                    />
+                                ))}
                                 <th className="px-6 py-4 font-semibold text-right text-text-muted text-xs uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -554,49 +630,80 @@ const Jira: React.FC = () => {
                                 const teamKey = Object.keys(teamRates).find(k => k === story.team || (story.team === 'H1' && k === 'H1'));
                                 const rate = teamKey ? teamRates[teamKey] : 0;
 
-                                const s1 = getEverhourCost(story.key, 'S1', rate);
-                                const s2 = getEverhourCost(story.key, 'S2', rate);
-                                const s3 = getEverhourCost(story.key, 'S3', rate);
-                                const s4 = getEverhourCost(story.key, 'S4', rate);
-                                const s5 = getEverhourCost(story.key, 'S5', rate);
-                                const ip = getEverhourCost(story.key, 'IP', rate);
-                                const total = getTotalEverhourCost(story.key, rate);
+                                // Pre-calc costs for reuse
+                                const costs = {
+                                    s1: getEverhourCost(story.key, 'S1', rate),
+                                    s2: getEverhourCost(story.key, 'S2', rate),
+                                    s3: getEverhourCost(story.key, 'S3', rate),
+                                    s4: getEverhourCost(story.key, 'S4', rate),
+                                    s5: getEverhourCost(story.key, 'S5', rate),
+                                    ip: getEverhourCost(story.key, 'IP', rate),
+                                    total: getTotalEverhourCost(story.key, rate)
+                                };
 
                                 return (
                                     <tr key={story.id} className="group hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-3 font-mono text-sm">
-                                            <a
-                                                href={`https://polypoint.atlassian.net/browse/${story.key}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-brand-secondary hover:text-brand-primary hover:underline"
-                                            >
-                                                {story.key}
-                                            </a>
-                                        </td>
-                                        <td className="px-6 py-3 text-text-main max-w-sm truncate" title={story.name}>{story.name}</td>
-                                        <td className="px-6 py-3">
-                                            <span className={clsx(
-                                                "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border",
-                                                getStatusColor(story.status)
-                                            )}>
-                                                {story.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-3 text-text-main">{story.team}</td>
-                                        <td className="px-6 py-3 text-text-main">{story.sp}</td>
-                                        <td className="px-6 py-3 text-right font-mono text-text-main">
-                                            {plannedValue > 0 ? plannedValue.toLocaleString('de-CH') : '-'}
-                                        </td>
+                                        {COLUMN_DEFS.filter(col => visibleColumns.has(col.key)).map(col => {
+                                            switch (col.key) {
+                                                case 'key':
+                                                    return (
+                                                        <td key={col.key} className="px-6 py-3 font-mono text-sm">
+                                                            <a
+                                                                href={`https://polypoint.atlassian.net/browse/${story.key}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-brand-secondary hover:text-brand-primary hover:underline"
+                                                            >
+                                                                {story.key}
+                                                            </a>
+                                                        </td>
+                                                    );
+                                                case 'summary':
+                                                    return <td key={col.key} className="px-6 py-3 text-text-main max-w-sm truncate" title={story.name}>{story.name}</td>;
+                                                case 'status':
+                                                    return (
+                                                        <td key={col.key} className="px-6 py-3">
+                                                            <span className={clsx(
+                                                                "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border",
+                                                                getStatusColor(story.status)
+                                                            )}>
+                                                                {story.status}
+                                                            </span>
+                                                        </td>
+                                                    );
+                                                case 'team':
+                                                    return <td key={col.key} className="px-6 py-3 text-text-main">{story.team}</td>;
+                                                case 'sp':
+                                                    return <td key={col.key} className="px-6 py-3 text-text-main">{story.sp}</td>;
+                                                case 'planned':
+                                                    return <td key={col.key} className="px-6 py-3 text-right font-mono text-text-main">{plannedValue > 0 ? plannedValue.toLocaleString('de-CH') : '-'}</td>;
 
-                                        {/* Sprint Costs */}
-                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s1 > 0 ? s1.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
-                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s2 > 0 ? s2.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
-                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s3 > 0 ? s3.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
-                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s4 > 0 ? s4.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
-                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s5 > 0 ? s5.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
-                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{ip > 0 ? ip.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
-                                        <td className="px-6 py-3 text-right font-mono text-sm font-semibold text-text-main">{total > 0 ? total.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+                                                // Dynamic Cost Columns
+                                                case 's1':
+                                                case 's2':
+                                                case 's3':
+                                                case 's4':
+                                                case 's5':
+                                                case 'ip':
+                                                case 'total':
+                                                    const val = costs[col.key as keyof typeof costs];
+                                                    return (
+                                                        <td key={col.key} className={`px-6 py-3 text-right font-mono ${col.key === 'total' ? 'text-sm font-semibold text-text-main' : 'text-xs text-text-muted'}`}>
+                                                            {val > 0 ? val.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}
+                                                        </td>
+                                                    );
+
+                                                case 'sprint':
+                                                    return <td key={col.key} className="px-6 py-3 text-text-muted text-sm">{story.sprint}</td>;
+                                                case 'epic':
+                                                    return <td key={col.key} className="px-6 py-3 text-text-muted text-sm">{story.epic}</td>;
+                                                case 'since':
+                                                    return <td key={col.key} className="px-6 py-3 text-text-muted text-sm">{story.since || '-'}</td>;
+
+                                                default:
+                                                    return <td key={col.key} className="px-6 py-3"></td>;
+                                            }
+                                        })}
 
                                         <td className="px-6 py-3 text-right">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

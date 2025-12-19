@@ -186,9 +186,9 @@ const Dashboard: React.FC = () => {
                             <thead>
                                 <tr className="border-b border-gray-100 text-text-muted text-xs uppercase tracking-wider sticky top-0 bg-white">
                                     <th className="pb-3 font-semibold">Topic</th>
-                                    <th className="pb-3 font-semibold text-right">Budget</th>
-                                    <th className="pb-3 font-semibold text-right">Planned</th>
-                                    <th className="pb-3 font-semibold text-right">Actual</th>
+                                    <th className="pb-3 font-semibold text-right">Budget (CHF)</th>
+                                    <th className="pb-3 font-semibold text-right">Planned (CHF)</th>
+                                    <th className="pb-3 font-semibold text-right">Actual (CHF)</th>
                                     <th className="pb-3 font-semibold text-right">Variance</th>
                                 </tr>
                             </thead>
@@ -221,6 +221,92 @@ const Dashboard: React.FC = () => {
                             </tfoot>
                         </table>
                     </div>
+                </div>
+            </div>
+
+            {/* Feature Details Table */}
+            <div className="card flex flex-col">
+                <h3 className="text-lg font-bold text-brand-primary mb-6">Feature Performance</h3>
+                <div className="overflow-x-auto -mx-6 px-6">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="border-b border-gray-100 text-text-muted text-xs uppercase tracking-wider bg-white">
+                                <th className="pb-3 font-semibold">Key</th>
+                                <th className="pb-3 font-semibold">Name</th>
+                                <th className="pb-3 font-semibold text-right">Budget (CHF)</th>
+                                <th className="pb-3 font-semibold text-right">Planned (CHF)</th>
+                                <th className="pb-3 font-semibold text-right">Actual (CHF)</th>
+                                <th className="pb-3 font-semibold w-48">Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {piFeatures
+                                .filter(f => topicFilter === 'all' || f.topicKey === topicFilter)
+                                .map(feature => {
+                                    // 1. Determine Budget based on Team Filter
+                                    let featureBudget = feature.pibBudget;
+                                    if (teamFilter !== 'all') {
+                                        const team = teams.find(t => t.name === teamFilter);
+                                        featureBudget = (team && feature.teamBudgets?.[team.id]) || 0;
+                                    }
+
+                                    // 2. Filter Stories based on Team Filter
+                                    let relatedStories = piStories.filter(s => s.epic === feature.jiraId);
+                                    if (teamFilter !== 'all') {
+                                        relatedStories = relatedStories.filter(s => s.team === teamFilter || (teamFilter === 'H1' && s.team === 'H1'));
+                                    }
+
+                                    // 3. Calculate Metrics (Planned, Actual, Progress)
+                                    const planned = relatedStories.reduce((sum, s) => {
+                                        const team = teams.find(t => t.name === s.team || (s.team === 'H1' && t.name === 'H1'));
+                                        const spValue = team ? team.spValue : 0;
+                                        return sum + ((s.sp || 0) * spValue);
+                                    }, 0);
+
+                                    let actual = 0;
+                                    relatedStories.forEach(story => {
+                                        const teamKey = Object.keys(teamRates).find(k => k === story.team || (story.team === 'H1' && k === 'H1'));
+                                        const rate = teamKey ? teamRates[teamKey] : 0;
+                                        if (rate > 0) {
+                                            const entries = everhourEntries.filter(e => e.jiraKey === story.key && e.pi === currentPI);
+                                            const hours = entries.reduce((sum, e) => sum + e.totalHours, 0);
+                                            actual += hours * rate;
+                                        }
+                                    });
+
+                                    const totalSP = relatedStories.reduce((sum, s) => sum + (s.sp || 0), 0);
+                                    const doneSP = relatedStories.filter(s => ['Done', 'Closed'].includes(s.status)).reduce((sum, s) => sum + (s.sp || 0), 0);
+                                    const progress = totalSP > 0 ? Math.round((doneSP / totalSP) * 100) : 0;
+
+                                    return {
+                                        feature,
+                                        budget: featureBudget,
+                                        planned,
+                                        actual,
+                                        progress
+                                    };
+                                })
+                                // 4. Filter out empty rows (optional, but ensures "Team Filter" effectively hides irrelevant features)
+                                .filter(item => item.budget > 0 || item.planned > 0 || item.actual > 0)
+                                .map(({ feature, budget, planned, actual, progress }) => (
+                                    <tr key={feature.id} className="group hover:bg-gray-50 transition-colors">
+                                        <td className="py-3 font-mono text-sm text-brand-secondary">{feature.jiraId}</td>
+                                        <td className="py-3 font-medium text-text-main max-w-sm truncate" title={feature.name}>{feature.name}</td>
+                                        <td className="py-3 text-right text-text-main font-mono">{budget.toLocaleString()}</td>
+                                        <td className="py-3 text-right text-text-main font-mono">{planned.toLocaleString()}</td>
+                                        <td className="py-3 text-right text-text-main font-mono font-semibold">{actual > 0 ? actual.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+                                        <td className="py-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-brand-primary" style={{ width: `${progress}%` }} />
+                                                </div>
+                                                <span className="text-xs font-medium w-8 text-right">{progress}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
