@@ -178,5 +178,59 @@ export const CapacityService = {
 
     async deleteImprovement(id: string): Promise<void> {
         await deleteDoc(doc(db, "improvements", id));
+    },
+
+    // --- Capacity Metrics Helper ---
+    async getTeamCapacityHours(pi: string): Promise<Record<string, number>> {
+        const [devs, avails] = await Promise.all([
+            this.getDevelopers(pi),
+            this.getAvailabilities(pi)
+        ]);
+
+        const teamHours: Record<string, number> = {};
+
+        // Group availabilities by sprint
+        const sprintsMap = new Map<string, CapacityAvailability[]>();
+        avails.forEach(row => {
+            if (!sprintsMap.has(row.sprint)) {
+                sprintsMap.set(row.sprint, []);
+            }
+            sprintsMap.get(row.sprint)!.push(row);
+        });
+
+        // Filter out IP sprints
+        const validSprints = Array.from(sprintsMap.entries())
+            .filter(([sprintName]) => !sprintName.includes('IP'));
+
+        devs.forEach((dev: CapacityDeveloper) => {
+            if (dev.specialCase) return;
+
+            const dailyHours = Number(dev.dailyHours) || 8;
+            const load = Number(dev.load) || 90;
+            const developRatio = Number(dev.developRatio) || 0;
+            const devH = (dailyHours * (load / 100) * (developRatio / 100));
+
+            validSprints.forEach(([sprintName, rows]) => {
+                const capacityDays = rows.reduce((sum, row) => {
+                    const val = row[dev.key]; // Dynamic access
+                    // If undefined or empty, assume 1 (Availability) unless logic says otherwise. 
+                    // In Teams.tsx logic: (val === undefined || val === null || val === '') ? 1 : Number(val);
+                    const numericVal = (val === undefined || val === null || val === '') ? 1 : Number(val);
+                    return sum + (isNaN(numericVal) ? 0 : numericVal);
+                }, 0);
+
+                const hours = capacityDays * devH;
+                const teamInSprint = dev.sprintTeams?.[sprintName] || dev.team;
+
+                if (teamInSprint) {
+                    teamHours[teamInSprint] = (teamHours[teamInSprint] || 0) + hours;
+                    if (teamInSprint === 'Hydrogen 1') {
+                        teamHours['H1'] = (teamHours['H1'] || 0) + hours;
+                    }
+                }
+            });
+        });
+
+        return teamHours;
     }
 };

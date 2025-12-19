@@ -268,6 +268,7 @@ const CapacityDevelopers: React.FC = () => {
                                 <th className="px-4 py-3 text-left">Action</th>
                                 <th className="px-4 py-3 text-left">Team</th>
                                 <th className="px-4 py-3 text-left">Key</th>
+                                <th className="px-4 py-3 text-left">Name</th>
                                 <th className="px-4 py-3 text-left">Spec.</th>
                                 <th className="px-4 py-3 text-left">Hrs/Day</th>
                                 <th className="px-4 py-3 text-left">Work %</th>
@@ -308,6 +309,14 @@ const CapacityDevelopers: React.FC = () => {
                                                 maxLength={3}
                                                 onChange={e => handleKeyChange(dev.key, e.target.value)}
                                                 className="bg-transparent w-12 border border-gray-200 rounded px-1 py-0.5"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-2">
+                                            <input
+                                                value={dev.name || ''}
+                                                onChange={e => handleInputChange(dev.key, 'name', e.target.value)}
+                                                className="bg-transparent w-full border-b border-gray-200 focus:border-blue-500 outline-none"
+                                                placeholder="Name"
                                             />
                                         </td>
                                         <td className="px-4 py-2 text-center">

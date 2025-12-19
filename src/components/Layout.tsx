@@ -38,6 +38,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { path: `/${currentPI}/capacity-details`, label: 'Details', icon: FileText },
         { path: `/${currentPI}/capacity-changes`, label: 'Changes', icon: Activity },
         { path: `/${currentPI}/capacity-improvements`, label: 'Improvements', icon: Layers },
+        { path: `/${currentPI}/calendar`, label: 'Calendar', icon: Clock },
     ];
 
     return (

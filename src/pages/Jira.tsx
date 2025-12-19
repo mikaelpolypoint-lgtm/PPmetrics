@@ -1,10 +1,11 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
 import type { Story, Feature } from '../types';
 import Papa from 'papaparse';
 import { Upload, FileText, AlertCircle, Plus, Edit2, Trash2, X, Save, Download, Filter, ArrowUp, ArrowDown, FileJson, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
+import { CapacityService } from '../services/CapacityService';
 
 type SortDirection = 'asc' | 'desc';
 type SortKey = keyof Story | 'statusColor' | 'since';
@@ -15,7 +16,7 @@ interface SortConfig {
 }
 
 const Jira: React.FC = () => {
-    const { stories, teams, importStories, importFeatures, currentPI, addStory, updateStory, deleteStory } = useData();
+    const { stories, teams, everhourEntries, importStories, importFeatures, currentPI, addStory, updateStory, deleteStory } = useData();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const jsonInputRef = useRef<HTMLInputElement>(null);
     const [error, setError] = useState<string | null>(null);
@@ -33,10 +34,48 @@ const Jira: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<Story>>({});
 
+    // Team Rate State
+    const [teamRates, setTeamRates] = useState<Record<string, number>>({});
+
     // Derived Data
     const currentStories = stories.filter(s => s.pi === currentPI);
     const uniqueFeatures = Array.from(new Set(currentStories.map(s => s.epic).filter(Boolean)));
     const uniqueTeams = Array.from(new Set(currentStories.map(s => s.team).filter(Boolean)));
+
+    // Load Capacity and Calculate Rates
+    useEffect(() => {
+        const calculateRates = async () => {
+            try {
+                const teamHours = await CapacityService.getTeamCapacityHours(currentPI);
+                const rates: Record<string, number> = {};
+
+                teams.forEach(team => {
+                    // SP Planned for this team
+                    const teamStories = currentStories.filter(s =>
+                        s.team === team.name || (team.name === 'H1' && s.team === 'H1')
+                    );
+                    const spPlanned = teamStories.reduce((sum, s) => sum + (s.sp || 0), 0);
+                    const pipPlan = spPlanned * team.spValue;
+
+                    // Capacity Hours
+                    const hours = teamHours[team.name] || 0;
+
+                    if (hours > 0) {
+                        rates[team.name] = pipPlan / hours;
+                    } else {
+                        rates[team.name] = 0;
+                    }
+                });
+                setTeamRates(rates);
+            } catch (err) {
+                console.error("Failed to calculate team rates", err);
+            }
+        };
+
+        if (currentStories.length > 0 && teams.length > 0) {
+            calculateRates();
+        }
+    }, [currentPI, currentStories, teams]);
 
     // Helper: Status Normalization
     const normalizeStatus = (status: string) => {
@@ -354,17 +393,31 @@ const Jira: React.FC = () => {
         return sortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />;
     };
 
-    const Th = ({ column, label, align = 'left' }: { column: SortKey, label: string, align?: 'left' | 'right' }) => (
+    const Th = ({ column, label, align = 'left', className = '' }: { column?: SortKey, label: string, align?: 'left' | 'right', className?: string }) => (
         <th
-            className={`px-6 py-4 font-semibold cursor-pointer hover:bg-gray-100 transition-colors select-none text-${align}`}
-            onClick={() => handleSort(column)}
+            className={`px-6 py-4 font-semibold select-none text-${align} ${className}`}
+            onClick={() => column && handleSort(column)}
         >
-            <div className={`flex items-center gap-2 ${align === 'right' ? 'justify-end' : ''}`}>
+            <div className={`flex items-center gap-2 ${align === 'right' ? 'justify-end' : ''} ${column ? 'cursor-pointer hover:bg-gray-100' : ''}`}>
                 {label}
-                <SortIcon column={column} />
+                {column && <SortIcon column={column} />}
             </div>
         </th>
     );
+
+    // Everhour Helper
+    const getEverhourCost = (jiraKey: string, sprintSuffix: string, rate: number) => {
+        const sprintName = `${currentPI}-${sprintSuffix}`;
+        const entries = everhourEntries.filter(e => e.jiraKey === jiraKey && e.sprint === sprintName && e.pi === currentPI);
+        const hours = entries.reduce((sum, e) => sum + e.totalHours, 0);
+        return hours * rate;
+    };
+
+    const getTotalEverhourCost = (jiraKey: string, rate: number) => {
+        const entries = everhourEntries.filter(e => e.jiraKey === jiraKey && e.pi === currentPI);
+        const hours = entries.reduce((sum, e) => sum + e.totalHours, 0);
+        return hours * rate;
+    };
 
     return (
         <div className="space-y-6">
@@ -475,13 +528,20 @@ const Jira: React.FC = () => {
                                 <Th column="key" label="Key" />
                                 <Th column="name" label="Summary" />
                                 <Th column="statusColor" label="Status" />
-                                <Th column="since" label="Since" />
-                                <Th column="sp" label="SP" />
                                 <Th column="team" label="Team" />
-                                <th className="px-6 py-4 font-semibold select-none text-right">Planned (CHF)</th>
-                                <Th column="sprint" label="Sprint" />
-                                <Th column="epic" label="Feature" />
-                                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                                <Th column="sp" label="SP" />
+                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">Planned (CHF)</th>
+
+                                {/* Sprint Costs */}
+                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S1</th>
+                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S2</th>
+                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S3</th>
+                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S4</th>
+                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">S5</th>
+                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">IP</th>
+                                <th className="px-6 py-4 font-semibold select-none text-right text-text-muted text-xs uppercase tracking-wider">Total</th>
+
+                                <th className="px-6 py-4 font-semibold text-right text-text-muted text-xs uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -489,6 +549,18 @@ const Jira: React.FC = () => {
                                 const teamObj = teams.find(t => t.name === story.team || (story.team === 'H1' && t.name === 'H1'));
                                 const spValue = teamObj ? teamObj.spValue : 0;
                                 const plannedValue = (story.sp || 0) * spValue;
+
+                                // Team Rate (Hourly) - Fallback to 0 if not found
+                                const teamKey = Object.keys(teamRates).find(k => k === story.team || (story.team === 'H1' && k === 'H1'));
+                                const rate = teamKey ? teamRates[teamKey] : 0;
+
+                                const s1 = getEverhourCost(story.key, 'S1', rate);
+                                const s2 = getEverhourCost(story.key, 'S2', rate);
+                                const s3 = getEverhourCost(story.key, 'S3', rate);
+                                const s4 = getEverhourCost(story.key, 'S4', rate);
+                                const s5 = getEverhourCost(story.key, 'S5', rate);
+                                const ip = getEverhourCost(story.key, 'IP', rate);
+                                const total = getTotalEverhourCost(story.key, rate);
 
                                 return (
                                     <tr key={story.id} className="group hover:bg-gray-50 transition-colors">
@@ -502,7 +574,7 @@ const Jira: React.FC = () => {
                                                 {story.key}
                                             </a>
                                         </td>
-                                        <td className="px-6 py-3 text-text-main max-w-md truncate" title={story.name}>{story.name}</td>
+                                        <td className="px-6 py-3 text-text-main max-w-sm truncate" title={story.name}>{story.name}</td>
                                         <td className="px-6 py-3">
                                             <span className={clsx(
                                                 "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border",
@@ -511,14 +583,21 @@ const Jira: React.FC = () => {
                                                 {story.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3 text-text-muted text-xs">{story.since}</td>
-                                        <td className="px-6 py-3 text-text-main">{story.sp}</td>
                                         <td className="px-6 py-3 text-text-main">{story.team}</td>
+                                        <td className="px-6 py-3 text-text-main">{story.sp}</td>
                                         <td className="px-6 py-3 text-right font-mono text-text-main">
                                             {plannedValue > 0 ? plannedValue.toLocaleString('de-CH') : '-'}
                                         </td>
-                                        <td className="px-6 py-3 text-text-main">{story.sprint}</td>
-                                        <td className="px-6 py-3"><span className="badge badge-accent">{story.epic}</span></td>
+
+                                        {/* Sprint Costs */}
+                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s1 > 0 ? s1.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s2 > 0 ? s2.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s3 > 0 ? s3.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s4 > 0 ? s4.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{s5 > 0 ? s5.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+                                        <td className="px-6 py-3 text-right font-mono text-xs text-text-muted">{ip > 0 ? ip.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+                                        <td className="px-6 py-3 text-right font-mono text-sm font-semibold text-text-main">{total > 0 ? total.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'}</td>
+
                                         <td className="px-6 py-3 text-right">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
@@ -542,7 +621,7 @@ const Jira: React.FC = () => {
                             })}
                             {processedStories.length === 0 && (
                                 <tr>
-                                    <td colSpan={8} className="text-center py-12 text-text-muted">
+                                    <td colSpan={14} className="text-center py-12 text-text-muted">
                                         <div className="flex flex-col items-center gap-3">
                                             <FileText size={48} className="opacity-20" />
                                             <p>No stories found matching your filters.</p>

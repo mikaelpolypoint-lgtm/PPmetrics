@@ -1,17 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
 import type { Feature } from '../types';
 import { Plus, Trash2, Edit2, X, Save } from 'lucide-react';
+import { CapacityService } from '../services/CapacityService';
 
 const Features: React.FC = () => {
-    const { features, topics, addFeature, updateFeature, deleteFeature, currentPI, teams, stories } = useData();
+    const { features, topics, addFeature, updateFeature, deleteFeature, currentPI, teams, stories, everhourEntries } = useData();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<Partial<Feature>>({});
+    const [teamRates, setTeamRates] = useState<Record<string, number>>({});
 
     const filteredFeatures = features.filter(f => f.pi === currentPI);
     const availableTopics = topics.filter(t => t.pi === currentPI);
+
+    // Calculate Team Rates (same logic as Jira.tsx)
+    useEffect(() => {
+        const calculateRates = async () => {
+            try {
+                const teamHours = await CapacityService.getTeamCapacityHours(currentPI);
+                const rates: Record<string, number> = {};
+
+                const currentStories = stories.filter(s => s.pi === currentPI);
+
+                teams.forEach(team => {
+                    const teamStories = currentStories.filter(s =>
+                        s.team === team.name || (team.name === 'H1' && s.team === 'H1')
+                    );
+                    const spPlanned = teamStories.reduce((sum, s) => sum + (s.sp || 0), 0);
+                    const pipPlan = spPlanned * team.spValue;
+                    const hours = teamHours[team.name] || 0;
+
+                    if (hours > 0) {
+                        rates[team.name] = pipPlan / hours;
+                    } else {
+                        rates[team.name] = 0;
+                    }
+                });
+                setTeamRates(rates);
+            } catch (err) {
+                console.error("Failed to calculate team rates", err);
+            }
+        };
+
+        if (teams.length > 0) {
+            calculateRates();
+        }
+    }, [currentPI, stories, teams]);
+
+    const getFeatureActualCost = (featureJiraId: string) => {
+        if (!featureJiraId) return 0;
+        const relatedStories = stories.filter(s => s.epic === featureJiraId && s.pi === currentPI);
+
+        let totalCost = 0;
+        relatedStories.forEach(story => {
+            const teamKey = Object.keys(teamRates).find(k => k === story.team || (story.team === 'H1' && k === 'H1'));
+            const rate = teamKey ? teamRates[teamKey] : 0;
+            if (rate > 0) {
+                const entries = everhourEntries.filter(e => e.jiraKey === story.key && e.pi === currentPI);
+                const hours = entries.reduce((sum, e) => sum + e.totalHours, 0);
+                totalCost += (hours * rate);
+            }
+        });
+        return totalCost;
+    };
 
     const startAdd = () => {
         setFormData({
@@ -160,6 +213,7 @@ const Features: React.FC = () => {
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Topic</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Budget PIB (CHF)</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Planned PIP (CHF)</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Actual (CHF)</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Total SP</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Progress</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider w-64">Team Split</th>
@@ -174,6 +228,8 @@ const Features: React.FC = () => {
                                     const spValue = team ? team.spValue : 0;
                                     return sum + ((s.sp || 0) * spValue);
                                 }, 0);
+                                const actualCost = getFeatureActualCost(feature.jiraId);
+
                                 const totalSP = relatedStories.reduce((sum, s) => sum + (s.sp || 0), 0);
                                 const doneSP = relatedStories.filter(s => ['Done', 'Closed'].includes(s.status)).reduce((sum, s) => sum + (s.sp || 0), 0);
                                 const progress = totalSP > 0 ? Math.round((doneSP / totalSP) * 100) : 0;
@@ -222,6 +278,7 @@ const Features: React.FC = () => {
                                                     />
                                                 </td>
                                                 <td className="px-6 py-4 text-text-main align-top text-sm">{plannedPIP.toLocaleString()} CHF</td>
+                                                <td className="px-6 py-4 text-text-main align-top text-sm">{actualCost.toLocaleString('de-CH', { maximumFractionDigits: 0 })} CHF</td>
                                                 <td className="px-6 py-4 text-text-main align-top text-sm">{totalSP}</td>
                                                 <td className="px-6 py-4 text-text-main align-top text-sm">
                                                     <div className="flex items-center gap-2">
@@ -268,6 +325,7 @@ const Features: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4 text-text-main align-top">{feature.pibBudget.toLocaleString()} CHF</td>
                                                 <td className="px-6 py-4 text-text-main align-top">{plannedPIP.toLocaleString()} CHF</td>
+                                                <td className="px-6 py-4 text-text-main align-top font-semibold">{actualCost > 0 ? actualCost.toLocaleString('de-CH', { maximumFractionDigits: 0 }) : '-'} CHF</td>
                                                 <td className="px-6 py-4 text-text-main align-top">{totalSP}</td>
                                                 <td className="px-6 py-4 text-text-main align-top">
                                                     <div className="flex items-center gap-2">
@@ -300,7 +358,7 @@ const Features: React.FC = () => {
                             })}
                             {filteredFeatures.length === 0 && (
                                 <tr>
-                                    <td colSpan={9} className="text-center py-8 text-text-muted">
+                                    <td colSpan={10} className="text-center py-8 text-text-muted">
                                         No features found for {currentPI}.
                                     </td>
                                 </tr>

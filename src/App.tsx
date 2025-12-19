@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-
 import { DataProvider, useData } from './context/DataContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
+import CalendarPage from './pages/Calendar';
 import Teams from './pages/Teams';
 import Topics from './pages/Topics';
 import Features from './pages/Features';
@@ -47,6 +48,7 @@ const AppRoutes: React.FC = () => {
           <PISync />
           <Routes>
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="calendar" element={<CalendarPage />} />
             <Route path="teams" element={<Teams />} />
             <Route path="topics" element={<Topics />} />
             <Route path="features" element={<Features />} />
