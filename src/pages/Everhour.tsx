@@ -4,7 +4,7 @@ import PageHeader from '../components/PageHeader';
 import Papa from 'papaparse';
 import { Upload, Clock, AlertCircle, FileText } from 'lucide-react';
 import { CapacityService } from '../services/CapacityService';
-import type { CapacityAvailability } from '../types/capacity';
+
 
 interface EverhourRow {
     key: string;
@@ -116,7 +116,7 @@ const Everhour: React.FC = () => {
             // Aggregation map
             const taskMap = new Map<string, EverhourRow>();
 
-            body.forEach((row, idx) => {
+            body.forEach((row) => {
                 // Remove # from key if present
                 let key = row[keyIdx]?.trim();
                 const day = row[dayIdx]?.trim();
