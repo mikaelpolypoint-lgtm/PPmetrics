@@ -185,7 +185,7 @@ const Everhour: React.FC = () => {
     const loadSampleData = async () => {
         setLoading(true);
         try {
-            const response = await fetch('/PPmetrics/everhour.csv');
+            const response = await fetch(`${import.meta.env.BASE_URL}everhour.csv`);
             if (!response.ok) throw new Error("Failed to fetch sample file");
             const text = await response.text();
             processCSVData(text);
