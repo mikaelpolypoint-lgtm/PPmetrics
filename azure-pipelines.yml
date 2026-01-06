@@ -15,9 +15,8 @@ steps:
       npm run build
     displayName: 'npm install and build'
 
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: 'dist'
-      ArtifactName: 'drop'
-      publishLocation: 'Container'
-    displayName: 'Publish Build Artifacts'
+  - script: |
+      npm install -g firebase-tools
+      firebase deploy --token $(FIREBASE_TOKEN) --only hosting --non-interactive
+    displayName: 'Deploy to Firebase Hosting'
+
