@@ -1,14 +1,16 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
+// TODO: Replace these values with the config from your Firebase Console
+// Go to: https://console.firebase.google.com/project/mikael-vibe-apps/settings/general/
 const firebaseConfig = {
-    apiKey: "AIzaSyD-JDc9MVG9GlEkKNV3SA8hKUPo680Hu4Y",
-    authDomain: "metrics-96e88.firebaseapp.com",
-    projectId: "metrics-96e88",
-    storageBucket: "metrics-96e88.firebasestorage.app",
-    messagingSenderId: "168553491984",
-    appId: "1:168553491984:web:6e5471c21e9e7b555aa495",
-    measurementId: "G-KVYJ8EHK21"
+    apiKey: "YOUR_API_KEY", // <--- UPDATE THIS
+    authDomain: "mikael-vibe-apps.firebaseapp.com",
+    projectId: "mikael-vibe-apps",
+    storageBucket: "mikael-vibe-apps.firebasestorage.app",
+    messagingSenderId: "243732549696", // I found this project number earlier
+    appId: "YOUR_APP_ID", // <--- UPDATE THIS
+    measurementId: "YOUR_MEASUREMENT_ID" // Optional
 };
 
 const app = initializeApp(firebaseConfig);
