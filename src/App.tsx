@@ -14,6 +14,7 @@ import Burndown from './pages/Burndown';
 import Metrics from './pages/Metrics';
 import SprintMetrics from './pages/SprintMetrics';
 import Monatscontrolling from './pages/Monatscontrolling';
+import EverhourCapacities from './pages/EverhourCapacities';
 import { PIS } from './types';
 import CapacityDashboard from './pages/capacity/CapacityDashboard';
 import CapacityDevelopers from './pages/capacity/CapacityDevelopers';
@@ -55,6 +56,7 @@ const AppRoutes: React.FC = () => {
             <Route path="jira" element={<Jira />} />
             <Route path="burndown" element={<Burndown />} />
             <Route path="everhour" element={<Everhour />} />
+            <Route path="everhour-capacities" element={<EverhourCapacities />} />
             <Route path="details" element={<Details />} />
             <Route path="metrics" element={<Metrics />} />
             <Route path="sprint-metrics" element={<SprintMetrics />} />

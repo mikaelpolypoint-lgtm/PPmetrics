@@ -23,6 +23,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { path: `/${currentPI}/jira`, label: 'Jira', icon: FileText },
         { path: `/${currentPI}/burndown`, label: 'Burndown', icon: PieChart },
         { path: `/${currentPI}/everhour`, label: 'Everhour', icon: Clock },
+        { path: `/${currentPI}/everhour-capacities`, label: 'Everhour Capacities', icon: Clock },
         { path: `/${currentPI}/topics`, label: 'Topics', icon: Layers },
         { path: `/${currentPI}/features`, label: 'Features', icon: Database },
         { path: `/${currentPI}/teams`, label: 'Teams', icon: Users },
