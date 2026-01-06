@@ -19,11 +19,11 @@ export interface Feature {
   id: string;
   name: string;
   jiraId: string;
-  pibBudget: number;
-  teamBudgets: Record<string, number>;
-  epicOwner: string;
   topicKey: string;
   pi: string;
+  bv: number; // Business Value (1-10)
+  pibBudget: number; // Planned Budget in CHF (Scope)
+  teamBudgets: Record<string, number>; // TeamID -> Amount
 }
 
 export interface Story {

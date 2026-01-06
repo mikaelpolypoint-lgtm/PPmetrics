@@ -10,6 +10,7 @@ const Burndown: React.FC = () => {
     // Filter State
     const [featureFilter, setFeatureFilter] = useState<string>('all');
     const [teamFilter, setTeamFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
     // Derived Data
     const currentStories = stories.filter(s => s.pi === currentPI);
@@ -46,7 +47,22 @@ const Burndown: React.FC = () => {
         if (teamFilter !== 'all') {
             result = result.filter(s => s.team === teamFilter);
         }
+        if (statusFilter) {
+            result = result.filter(s => normalizeStatus(s.status) === statusFilter);
+        }
 
+        return result;
+    }, [currentStories, featureFilter, teamFilter, statusFilter]);
+
+    // Chart Data should be based on stories filtered by Team/Feature, BUT NOT by Status (so the chart stays visible)
+    const chartBaseStories = useMemo(() => {
+        let result = currentStories;
+        if (featureFilter !== 'all') {
+            result = result.filter(s => s.epic === featureFilter);
+        }
+        if (teamFilter !== 'all') {
+            result = result.filter(s => s.team === teamFilter);
+        }
         return result;
     }, [currentStories, featureFilter, teamFilter]);
 
@@ -60,7 +76,7 @@ const Burndown: React.FC = () => {
             'Open': 0
         };
 
-        filteredStories.forEach(story => {
+        chartBaseStories.forEach(story => {
             const status = normalizeStatus(story.status);
             data[status] = (data[status] || 0) + (story.sp || 0);
         });
@@ -68,7 +84,7 @@ const Burndown: React.FC = () => {
         return Object.entries(data)
             .map(([name, value]) => ({ name, value }))
             .filter(item => item.value > 0); // Only show statuses with data
-    }, [filteredStories]);
+    }, [chartBaseStories]);
 
     const totalSP = chartData.reduce((sum, item) => sum + item.value, 0);
 
@@ -126,9 +142,19 @@ const Burndown: React.FC = () => {
                                 outerRadius={150}
                                 fill="#8884d8"
                                 dataKey="value"
+                                onClick={(data) => {
+                                    setStatusFilter(current => current === data.name ? null : data.name);
+                                }}
+                                className="cursor-pointer"
                             >
                                 {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#cccccc'} />
+                                    <Cell
+                                        key={`cell-${index}`}
+                                        fill={STATUS_COLORS[entry.name] || '#cccccc'}
+                                        stroke={statusFilter === entry.name ? '#000' : 'none'}
+                                        strokeWidth={2}
+                                        opacity={statusFilter && statusFilter !== entry.name ? 0.3 : 1}
+                                    />
                                 ))}
                             </Pie>
                             <Tooltip formatter={(value: number) => [`${value} SP`, 'Story Points']} />
