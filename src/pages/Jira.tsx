@@ -316,7 +316,8 @@ const Jira: React.FC = () => {
                         teamBudgets: {},
                         epicOwner: '',
                         topicKey: '',
-                        pi: currentPI
+                        pi: currentPI,
+                        bv: 0
                     }));
 
                     importStories(parsedStories.map((s: any) => {

@@ -246,8 +246,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ];
 
         const newFeatures: Feature[] = [
-            { id: 'f1', name: 'Login Page', jiraId: 'FEAT-1', bv: 8, topicKey: 'TECH', pi },
-            { id: 'f2', name: 'Dashboard', jiraId: 'FEAT-2', bv: 5, topicKey: 'TECH', pi }
+            { id: 'f1', name: 'Login Page', jiraId: 'FEAT-1', bv: 8, topicKey: 'TECH', pi, pibBudget: 0, teamBudgets: {} },
+            { id: 'f2', name: 'Dashboard', jiraId: 'FEAT-2', bv: 5, topicKey: 'TECH', pi, pibBudget: 0, teamBudgets: {} }
         ];
 
         const newStories: Story[] = [

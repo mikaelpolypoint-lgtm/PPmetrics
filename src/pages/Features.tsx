@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
 import type { Feature } from '../types';
 import Papa from 'papaparse';
-import { Plus, Trash2, Edit2, Upload, Download, FileJson, Filter, ArrowUp, ArrowDown, Save, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Upload, Download, FileJson, Filter, ArrowUp, ArrowDown } from 'lucide-react';
 import { CapacityService } from '../services/CapacityService';
 
 type SortDirection = 'asc' | 'desc';
