@@ -1,5 +1,8 @@
 import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
+import { Download } from 'lucide-react';
+import Papa from 'papaparse';
+import clsx from 'clsx';
 
 const SPRINTS = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Sprint 4', 'Sprint 5', 'Sprint 6'];
 
@@ -214,14 +217,39 @@ const Monatscontrolling: React.FC = () => {
         { label: 'Bugs currently open (Sum)', calc: calculateSumBugsOpen, highlight: false },
     ];
 
+    const exportCSV = () => {
+        const data = rows.map(row => {
+            const rowData: Record<string, string | number> = { Metric: row.label };
+            SPRINTS.forEach((s, idx) => {
+                rowData[s] = row.calc(idx).display;
+            });
+            return rowData;
+        });
+
+        const csv = Papa.unparse(data);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `monatscontrolling_${currentPI}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <PageHeader
                 title={`${currentPI} Monatscontrolling`}
                 description="Cumulated view of metrics across all teams."
+                actions={
+                    <button onClick={exportCSV} className="btn btn-secondary flex items-center gap-2">
+                        <Download size={18} /> Export CSV
+                    </button>
+                }
             />
 
-            <div className="card overflow-hidden">
+            <div className="card"> {/* Removed overflow-hidden to allow tooltips to spill out if needed, though table overflow is separate */}
                 <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100">
                     <h3 className="font-bold text-lg text-brand-primary">Cumulated Metrics</h3>
                 </div>
@@ -244,7 +272,7 @@ const Monatscontrolling: React.FC = () => {
                                         {row.label}
                                     </td>
                                     {SPRINTS.map((_, sIdx) => (
-                                        <TooltipCell key={sIdx} result={row.calc(sIdx)} />
+                                        <TooltipCell key={sIdx} result={row.calc(sIdx)} index={sIdx} total={SPRINTS.length} />
                                     ))}
                                 </tr>
                             ))}
@@ -256,26 +284,51 @@ const Monatscontrolling: React.FC = () => {
     );
 };
 
-const TooltipCell: React.FC<{ result: MetricResult }> = ({ result }) => (
-    <td className="px-6 py-4 text-center border-l border-gray-100 font-mono text-gray-600 relative group cursor-pointer hover:bg-white transition-colors">
-        <span className="border-b border-dashed border-gray-300 pb-0.5">{result.display}</span>
+const TooltipCell: React.FC<{ result: MetricResult, index: number, total: number }> = ({ result, index, total }) => {
+    // Dynamic alignment to prevent tooltip clipping
+    // First 2 columns: Align Left
+    // Last 2 columns: Align Right
+    // Middle: Center
+    const isLeft = index < 2;
+    const isRight = index >= total - 2;
 
-        {/* Tooltip */}
-        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-48 bg-gray-900/95 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 backdrop-blur-sm pointer-events-none transform translate-y-1 group-hover:translate-y-0">
-            <div className="p-2 space-y-1">
-                <div className="font-semibold border-b border-gray-700 pb-1 mb-1 text-gray-300 text-[10px] uppercase tracking-wide">Breakdown</div>
-                {result.breakdown.map((item, i) => (
-                    <div key={i} className="flex justify-between items-center text-gray-200">
-                        <span>{item.team}:</span>
-                        <span className="font-mono font-medium text-white">{item.value}</span>
-                    </div>
-                ))}
+    return (
+        <td className="px-6 py-4 text-center border-l border-gray-100 font-mono text-gray-600 relative group cursor-pointer hover:bg-white transition-colors">
+            <span className="border-b border-dashed border-gray-300 pb-0.5">{result.display}</span>
+
+            {/* Tooltip */}
+            <div className={clsx(
+                "absolute z-50 bottom-full mb-2 w-48 bg-gray-900/95 text-white text-xs rounded-lg shadow-xl",
+                "opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 backdrop-blur-sm pointer-events-none",
+                "transform translate-y-1 group-hover:translate-y-0",
+                {
+                    "left-0 translate-x-0": isLeft,
+                    "right-0 translate-x-0": isRight,
+                    "left-1/2 -translate-x-1/2": !isLeft && !isRight
+                }
+            )}>
+                <div className="p-2 space-y-1">
+                    <div className="font-semibold border-b border-gray-700 pb-1 mb-1 text-gray-300 text-[10px] uppercase tracking-wide">Breakdown</div>
+                    {result.breakdown.map((item, i) => (
+                        <div key={i} className="flex justify-between items-center text-gray-200">
+                            <span>{item.team}:</span>
+                            <span className="font-mono font-medium text-white">{item.value}</span>
+                        </div>
+                    ))}
+                </div>
+                {/* Arrow */}
+                <div className={clsx(
+                    "absolute top-full w-0 h-0 border-4 border-transparent border-t-gray-900/95",
+                    {
+                        "left-4": isLeft,    // Arrow follows the box alignment
+                        "right-4": isRight,
+                        "left-1/2 -translate-x-1/2": !isLeft && !isRight
+                    }
+                )}></div>
             </div>
-            {/* Arrow */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-4 border-transparent border-t-gray-900/95"></div>
-        </div>
-    </td>
-);
+        </td>
+    );
+};
 
 export default Monatscontrolling;
 
