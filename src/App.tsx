@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { DataProvider, useData } from './context/DataContext';
+import { AuthProvider } from './lib/auth';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import CalendarPage from './pages/Calendar';
@@ -82,13 +83,15 @@ import AuthGate from './components/AuthGate';
 
 function App() {
   return (
-    <DataProvider>
-      <AuthGate>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthGate>
-    </DataProvider>
+    <AuthProvider>
+      <DataProvider>
+        <AuthGate>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthGate>
+      </DataProvider>
+    </AuthProvider>
   );
 }
 
