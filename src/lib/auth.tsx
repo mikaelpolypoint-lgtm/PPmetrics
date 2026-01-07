@@ -7,7 +7,6 @@ import {
     GoogleAuthProvider,
     OAuthProvider,
     signOut,
-    User,
 } from "firebase/auth";
 
 type Role = "admin" | "dev" | "viewer";
