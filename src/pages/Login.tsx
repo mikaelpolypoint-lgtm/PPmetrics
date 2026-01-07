@@ -10,7 +10,7 @@ const Login: React.FC = () => {
                     onClick={signInWithMicrosoft}
                     className="btn btn-primary w-full"
                 >
-                    Sign in with SSO (Microsoft)
+                    Sign in
                 </button>
             </div>
         </div>
