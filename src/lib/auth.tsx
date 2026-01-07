@@ -19,8 +19,20 @@ export interface AuthUser {
 }
 
 // Contexts
-const AuthContext = createContext<AuthUser | null>(null);
+interface AuthContextType {
+    user: AuthUser | null;
+    loading: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
 export const useAuth = () => {
+    const ctx = useContext(AuthContext);
+    if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+    return ctx.user; // For backward compatibility with existing code expecting just user
+};
+
+export const useAuthFull = () => {
     const ctx = useContext(AuthContext);
     if (!ctx) throw new Error("useAuth must be used within AuthProvider");
     return ctx;
@@ -28,6 +40,7 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
+    const [loading, setLoading] = useState(true);
     const auth = getAuth();
 
     useEffect(() => {
@@ -44,11 +57,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             } else {
                 setUser(null);
             }
+            setLoading(false);
         });
         return () => unsub();
     }, [auth]);
 
-    return <AuthContext.Provider value={user}>{children}</AuthContext.Provider>;
+    return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
 };
 
 // Helper sign‑in functions
