@@ -5,6 +5,7 @@ import type { CapacityDeveloper, CapacityAvailability } from '../../types/capaci
 import { Download } from 'lucide-react';
 import Papa from 'papaparse';
 
+import InfoTooltip from '../../components/InfoTooltip';
 import DashboardTableBody from '../../components/capacity/DashboardTableBody';
 import type { SprintData, DevAttrs } from '../../components/capacity/DashboardTableBody';
 
@@ -207,10 +208,10 @@ const CapacityDashboard: React.FC = () => {
     if (loading) return <div className="p-8 text-center text-text-muted">Loading Capacity Dashboard...</div>;
 
     const tables = [
-        { title: "SP Load", field: "dailySP" as const },
-        { title: "Dev h", field: "devH" as const },
-        { title: "Maintain h", field: "maintainH" as const },
-        { title: "Manage h", field: "manageH" as const }
+        { title: "SP Load", field: "dailySP" as const, description: "Daily Story Points capacity (Dev H / 8 * Velocity)." },
+        { title: "Dev h", field: "devH" as const, description: "Daily hours available for feature development." },
+        { title: "Maintain h", field: "maintainH" as const, description: "Daily hours reserved for maintenance (bugs, support)." },
+        { title: "Manage h", field: "manageH" as const, description: "Daily hours reserved for management and coordination." }
     ];
 
     return (
@@ -242,7 +243,10 @@ const CapacityDashboard: React.FC = () => {
                 {tables.map(table => (
                     <div key={table.title} className="bg-bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
                         <div className="flex items-center justify-between p-4 border-b border-border bg-gray-50/50">
-                            <h3 className="font-semibold text-text-main">{table.title}</h3>
+                            <h3 className="font-semibold text-text-main flex items-center">
+                                {table.title}
+                                <InfoTooltip text={table.description} />
+                            </h3>
                             <button
                                 onClick={() => exportCSV(table.title, table.field)}
                                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-brand-primary bg-brand-primary/10 rounded-lg hover:bg-brand-primary/20 transition-colors"

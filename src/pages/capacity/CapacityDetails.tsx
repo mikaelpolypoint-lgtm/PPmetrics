@@ -4,6 +4,7 @@ import { CapacityService } from '../../services/CapacityService';
 import type { CapacityDeveloper, CapacityAvailability } from '../../types/capacity';
 import { Download } from 'lucide-react';
 import Papa from 'papaparse';
+import InfoTooltip from '../../components/InfoTooltip';
 import DashboardTableBody from '../../components/capacity/DashboardTableBody';
 import type { SprintData, DevAttrs } from '../../components/capacity/DashboardTableBody';
 
@@ -205,10 +206,10 @@ const CapacityDetails: React.FC = () => {
 
     // Tables configuration
     const tables = [
-        { title: "Product Budget", field: "dailyCHF" as const },
-        { title: "Daily Dev CHF", field: "dailyDevCHF" as const },
-        { title: "Daily Main CHF", field: "dailyMainCHF" as const },
-        { title: "Daily Manage CHF", field: "dailyManageCHF" as const },
+        { title: "Product Budget", field: "dailyCHF" as const, description: "Daily Product Budget. Formula: (DevH + Overhead) * Loaded Cost." },
+        { title: "Daily Dev CHF", field: "dailyDevCHF" as const, description: "Daily cost for Development. Formula: (DevH / Load) * Cost." },
+        { title: "Daily Main CHF", field: "dailyMainCHF" as const, description: "Daily cost for Maintenance. Formula: (MntH / Load) * Cost." },
+        { title: "Daily Manage CHF", field: "dailyManageCHF" as const, description: "Daily cost for Management. Formula: (MngH / Load) * Cost." },
     ];
 
     return (
@@ -242,7 +243,10 @@ const CapacityDetails: React.FC = () => {
                 {tables.map(table => (
                     <div key={table.title} className="bg-bg-surface rounded-xl border border-border shadow-sm overflow-hidden">
                         <div className="flex items-center justify-between p-4 border-b border-border bg-gray-50/50">
-                            <h3 className="font-semibold text-text-main">{table.title}</h3>
+                            <h3 className="font-semibold text-text-main flex items-center">
+                                {table.title}
+                                <InfoTooltip text={table.description} />
+                            </h3>
                             <button
                                 onClick={() => exportCSV(table.title, table.field)}
                                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-brand-primary bg-brand-primary/10 rounded-lg hover:bg-brand-primary/20 transition-colors"

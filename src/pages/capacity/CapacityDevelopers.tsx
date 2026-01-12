@@ -5,6 +5,8 @@ import type { CapacityDeveloper } from '../../types/capacity';
 import { Plus, Save, Trash2, Download, Upload, Settings } from 'lucide-react';
 import Papa from 'papaparse';
 
+import InfoTooltip from '../../components/InfoTooltip';
+
 const TEAMS = ['Neon', 'H1', 'Zn2C', 'Tungsten', 'UI', 'TMGT', 'Admin'];
 
 const CapacityDevelopers: React.FC = () => {
@@ -323,23 +325,27 @@ const CapacityDevelopers: React.FC = () => {
                                 <th className="px-4 py-3 text-left">Team</th>
                                 <th className="px-4 py-3 text-left">Key</th>
                                 <th className="px-4 py-3 text-left">Name</th>
-                                <th className="px-4 py-3 text-left">Spec.</th>
-                                <th className="px-4 py-3 text-left">Hrs/Day</th>
-                                <th className="px-4 py-3 text-left">Work %</th>
-                                <th className="px-4 py-3 text-left">Cost</th>
-                                <th className="px-4 py-3 text-left">Load %</th>
-                                <th className="px-4 py-3 text-left">Mng %</th>
-                                <th className="px-4 py-3 text-left">Dev %</th>
-                                <th className="px-4 py-3 text-left">Mnt %</th>
-                                <th className="px-4 py-3 text-left">Vel.</th>
-                                <th className="px-4 py-3 text-left text-gray-500">Dev H</th>
-                                <th className="px-4 py-3 text-left text-gray-500">Mnt H</th>
-                                <th className="px-4 py-3 text-left text-gray-500">Mng H</th>
-                                <th className="px-4 py-3 text-left text-gray-500">Product Budget</th>
-                                <th className="px-4 py-3 text-left text-gray-500">Dev CHF</th>
-                                <th className="px-4 py-3 text-left text-gray-500">Main CHF</th>
-                                <th className="px-4 py-3 text-left text-gray-500">Mng CHF</th>
-                                <th className="px-4 py-3 text-left text-gray-500">SP/Day</th>
+                                import InfoTooltip from '../../components/InfoTooltip';
+
+                                // ... existing code ...
+
+                                <th className="px-4 py-3 text-left">Specs <InfoTooltip text="Special Case? Excludes dev from some totals." /></th>
+                                <th className="px-4 py-3 text-left">Hrs/Day <InfoTooltip text="Standard daily working hours (e.g. 8.4)." /></th>
+                                <th className="px-4 py-3 text-left">Work % <InfoTooltip text="Employment level (e.g. 100% = 1.0 FTE)." /></th>
+                                <th className="px-4 py-3 text-left">Cost <InfoTooltip text="Internal hourly cost rate (CHF)." /></th>
+                                <th className="px-4 py-3 text-left">Load % <InfoTooltip text="Planned capacity load (Std 90%). Leaves buffer for meetings/overhead." /></th>
+                                <th className="px-4 py-3 text-left">Mng % <InfoTooltip text="Share of time for Management/Coordination." /></th>
+                                <th className="px-4 py-3 text-left">Dev % <InfoTooltip text="Share of time for Feature Development." /></th>
+                                <th className="px-4 py-3 text-left">Mnt % <InfoTooltip text="Share of time for Maintenance (Bugs/Support)." /></th>
+                                <th className="px-4 py-3 text-left">Vel. <InfoTooltip text="Story Points velocity per day." /></th>
+                                <th className="px-4 py-3 text-left text-gray-500">Dev H <InfoTooltip text="Daily Hours * Load% * Dev ratio." /></th>
+                                <th className="px-4 py-3 text-left text-gray-500">Mnt H <InfoTooltip text="Daily Hours * Load% * Maintain ratio." /></th>
+                                <th className="px-4 py-3 text-left text-gray-500">Mng H <InfoTooltip text="Daily Hours * Load% * Manage ratio." /></th>
+                                <th className="px-4 py-3 text-left text-gray-500">Product Budget <InfoTooltip text="Complex formula involving Dev/Mng/Mnt ratios and loaded internal cost (x1.33)." /></th>
+                                <th className="px-4 py-3 text-left text-gray-500">Dev CHF <InfoTooltip text="Dev Hours / Load * InternalCost." /></th>
+                                <th className="px-4 py-3 text-left text-gray-500">Main CHF <InfoTooltip text="Maintain Hours / Load * InternalCost." /></th>
+                                <th className="px-4 py-3 text-left text-gray-500">Mng CHF <InfoTooltip text="Manage Hours / Load * InternalCost." /></th>
+                                <th className="px-4 py-3 text-left text-gray-500">SP/Day <InfoTooltip text="Daily Story Points (Dev H / 8 * Velocity)." /></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
