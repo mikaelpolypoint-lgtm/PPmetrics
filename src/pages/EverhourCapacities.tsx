@@ -145,18 +145,48 @@ const EverhourCapacities: React.FC = () => {
         const file = event.target.files?.[0];
         if (!file) return;
 
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                try {
-                    processCSV(results.data);
-                } catch (e: any) {
-                    setError("CSV Processing Error: " + e.message);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            if (!text) return;
+
+            // Check if we need to skip lines
+            // User report: "values ... start at row 4", "in row 3 the attributes are titled"
+            // This means we need to skip the first 2 rows if the file has that metadata header.
+
+            const lines = text.split(/\r\n|\n|\r/);
+            let csvText = text;
+
+            // Heuristic: If line 1 doesn't look like a header (e.g. doesn't start with "Member"),
+            // and line 3 does, then skip 2 lines.
+            if (lines.length > 2) {
+                const firstLine = lines[0].trim();
+                const thirdLine = lines[2].trim();
+
+                // If first line DOES NOT start with "Member" AND third line DOES
+                // We assume it's the report format.
+                if (!firstLine.startsWith('Member') && thirdLine.startsWith('Member')) {
+                    // Rejoin from line 3 onwards
+                    // We slice 2 lines off
+                    csvText = lines.slice(2).join('\n');
                 }
-            },
-            error: (err) => setError("CSV Parse Error: " + err.message)
-        });
+            }
+
+            Papa.parse(csvText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    try {
+                        processCSV(results.data);
+                    } catch (e: any) {
+                        setError("CSV Processing Error: " + e.message);
+                    }
+                },
+                error: (err: any) => setError("CSV Parse Error: " + err.message)
+            });
+        };
+        reader.readAsText(file);
+
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
