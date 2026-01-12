@@ -5,22 +5,12 @@ import type { CapacityDeveloper, CapacityAvailability } from '../../types/capaci
 import { Download } from 'lucide-react';
 import Papa from 'papaparse';
 
-interface SprintData {
-    name: string;
-    rows: CapacityAvailability[];
-}
-
-interface DevAttrs {
-    devH: number;
-    maintainH: number;
-    manageH: number;
-    dailySP: number;
-    pibBudget: number;
-    dailyCHF: number;
-}
+import DashboardTableBody from '../../components/capacity/DashboardTableBody';
+import type { SprintData, DevAttrs } from '../../components/capacity/DashboardTableBody';
 
 const CapacityDashboard: React.FC = () => {
-    const { currentPI, teams: teamListData } = useData(); // Access teams data
+    // ... useData hooks ...
+    const { currentPI } = useData();
     const [developers, setDevelopers] = useState<CapacityDeveloper[]>([]);
     const [availabilities, setAvailabilities] = useState<CapacityAvailability[]>([]);
     const [loading, setLoading] = useState(true);
@@ -128,12 +118,7 @@ const CapacityDashboard: React.FC = () => {
         const manageH = (dailyHours * (load / 100) * (manageRatio / 100));
         const dailySP = (devH / 8) * velocity;
 
-        // Calculate PIB Budget
-        const teamObj = teamListData.find(t => t.name === dev.team);
-        const costOfDevH = teamObj?.costOfDevH || 0;
-        const pibBudget = devH * costOfDevH;
-
-        // Calculate Daily CHF
+        // Calculate Product Budget (formerly Daily CHF)
         // Formula: (devH + (manageH * devH / (devH + maintainH))) * (internalCost * 1.33)
         const productiveH = devH + maintainH;
         const internalCost = Number(dev.internalCost) || 0;
@@ -142,7 +127,7 @@ const CapacityDashboard: React.FC = () => {
             dailyCHF = (devH + (manageH * devH / productiveH)) * (internalCost * 1.33);
         }
 
-        return { devH, maintainH, manageH, dailySP, pibBudget, dailyCHF };
+        return { devH, maintainH, manageH, dailySP, dailyCHF };
     };
 
     const exportCSV = (title: string, field: keyof DevAttrs) => {
@@ -212,9 +197,7 @@ const CapacityDashboard: React.FC = () => {
         { title: "SP Load", field: "dailySP" as const },
         { title: "Dev h", field: "devH" as const },
         { title: "Maintain h", field: "maintainH" as const },
-        { title: "Manage h", field: "manageH" as const },
-        { title: "PIB Budget (CHF)", field: "pibBudget" as const },
-        { title: "Daily CHF", field: "dailyCHF" as const }
+        { title: "Manage h", field: "manageH" as const }
     ];
 
     return (
@@ -282,99 +265,6 @@ const CapacityDashboard: React.FC = () => {
                 ))}
             </div>
         </div>
-    );
-};
-
-// Extracted for performance/cleanness
-const DashboardTableBody: React.FC<{
-    sprints: SprintData[];
-    developers: CapacityDeveloper[];
-    field: keyof DevAttrs;
-    filterTeam: string;
-    getSprintCapacity: (s: string, k: string) => number;
-    getDevAttrs: (d: CapacityDeveloper) => DevAttrs;
-}> = ({ sprints, developers, field, filterTeam, getSprintCapacity, getDevAttrs }) => {
-    const format = (n: number) => {
-        if (field === 'dailySP') return n.toFixed(1);
-        if (field === 'pibBudget' || field === 'dailyCHF') return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-        return Math.round(n).toString();
-    };
-
-    // Calculate totals
-    const devTotals: Record<string, number> = {};
-    const devTotalsNoIP: Record<string, number> = {};
-    developers.forEach(d => { devTotals[d.key] = 0; devTotalsNoIP[d.key] = 0; });
-
-    let grandTotal = 0;
-    let grandTotalNoIP = 0;
-
-    const rows = sprints.map(sprint => {
-        const isIpSprint = sprint.name.includes('IP');
-        let rowTotal = 0;
-
-        const cells = developers.map(dev => {
-            const capacityDays = getSprintCapacity(sprint.name, dev.key);
-            const attrs = getDevAttrs(dev);
-            const val = capacityDays * attrs[field];
-
-            const devTeamInSprint = dev.sprintTeams?.[sprint.name] || dev.team;
-            const isMember = filterTeam === 'All' || devTeamInSprint === filterTeam;
-
-            if (isMember) {
-                devTotals[dev.key] += val;
-                if (!isIpSprint) devTotalsNoIP[dev.key] += val;
-                if (!dev.specialCase) rowTotal += val;
-            }
-
-            return (
-                <td key={dev.key} className={`px-4 py-2 text-center ${dev.specialCase ? 'text-red-500 font-bold' : 'text-text-main'}`}>
-                    {isMember ? format(val) : <span className="text-gray-300">-</span>}
-                </td>
-            );
-        });
-
-        return (
-            <tr key={sprint.name} className="hover:bg-gray-50/50 transition-colors">
-                <td className="px-4 py-2 font-medium text-text-main">{sprint.name}</td>
-                {cells}
-                <td className="px-4 py-2 text-right font-bold text-text-main">{format(rowTotal)}</td>
-            </tr>
-        );
-    });
-
-    // Totals
-    const totalCells = developers.map(dev => {
-        if (!dev.specialCase) grandTotal += devTotals[dev.key];
-        return (
-            <td key={dev.key} className={`px-4 py-2 text-center font-bold ${dev.specialCase ? 'text-red-500' : 'text-text-main'}`}>
-                {format(devTotals[dev.key])}
-            </td>
-        );
-    });
-
-    const noIpCells = developers.map(dev => {
-        if (!dev.specialCase) grandTotalNoIP += devTotalsNoIP[dev.key];
-        return (
-            <td key={dev.key} className={`px-4 py-2 text-center font-bold ${dev.specialCase ? 'text-red-500' : 'text-text-main'}`}>
-                {format(devTotalsNoIP[dev.key])}
-            </td>
-        );
-    });
-
-    return (
-        <>
-            {rows}
-            <tr className="bg-blue-50/50 font-bold border-t-2 border-blue-100">
-                <td className="px-4 py-2">Total</td>
-                {totalCells}
-                <td className="px-4 py-2 text-right">{format(grandTotal)}</td>
-            </tr>
-            <tr className="bg-emerald-50/50 font-bold">
-                <td className="px-4 py-2">Ohne IP</td>
-                {noIpCells}
-                <td className="px-4 py-2 text-right">{format(grandTotalNoIP)}</td>
-            </tr>
-        </>
     );
 };
 

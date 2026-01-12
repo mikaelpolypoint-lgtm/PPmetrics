@@ -1,6 +1,6 @@
 import { db } from '../lib/firebase';
 import { collection, getDocs, setDoc, doc, query, where, deleteDoc, getDoc } from 'firebase/firestore';
-import type { CapacityDeveloper, CapacityAvailability, CapacityImprovement, PIConfiguration } from '../types/capacity';
+import type { CapacityDeveloper, CapacityAvailability, CapacityImprovement, PIConfiguration, EverhourTeamData } from '../types/capacity';
 
 export const CapacityService = {
     // --- Developers ---
@@ -245,5 +245,16 @@ export const CapacityService = {
         });
 
         return teamHours;
+    },
+
+    // --- Everhour Actuals ---
+    async getEverhourData(pi: string): Promise<EverhourTeamData[]> {
+        const q = query(collection(db, "everhour_capacities"), where("pi", "==", pi));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(d => d.data() as EverhourTeamData);
+    },
+
+    async saveEverhourData(data: EverhourTeamData): Promise<void> {
+        await setDoc(doc(db, "everhour_capacities", `${data.pi}_${data.team}`), data);
     }
 };

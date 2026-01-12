@@ -36,7 +36,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { path: `/${currentPI}/capacity-dashboard`, label: 'Capacity Dashboard', icon: LayoutDashboard },
         { path: `/${currentPI}/capacity-developers`, label: 'Developers', icon: Users },
         { path: `/${currentPI}/capacity-availabilities`, label: 'Availabilities', icon: Clock },
-        { path: `/${currentPI}/capacity-details`, label: 'Details', icon: FileText },
+        { path: `/${currentPI}/capacity-details`, label: 'PIB Capacity', icon: FileText },
+        { path: `/${currentPI}/capacity-team-details`, label: 'PIB Team Capacity', icon: Users },
         { path: `/${currentPI}/capacity-changes`, label: 'Changes', icon: Activity },
 
         { path: `/${currentPI}/calendar`, label: 'Calendar', icon: Clock },

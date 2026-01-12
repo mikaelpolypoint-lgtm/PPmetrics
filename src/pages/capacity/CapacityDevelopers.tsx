@@ -221,21 +221,33 @@ const CapacityDevelopers: React.FC = () => {
         const dailySP = (devH / 8) * velocity;
 
         // Find team cost
-        const teamObj = teams.find(t => t.name === dev.team);
-        const costOfDevH = teamObj?.costOfDevH || 0;
-        const pibBudget = devH * costOfDevH;
+        // Team logic was used for PIB Budget, kept for reference if needed or removed
+        // const teamObj = teams.find(t => t.name === dev.team);
+        // const costOfDevH = teamObj?.costOfDevH || 0;
 
-        // Calculate Daily CHF
+        // Calculate Product Budget (formerly Daily CHF)
         // Formula: (devH + (manageH * devH / (devH + maintainH))) * (internalCost * 1.33)
         // Guard against division by zero
         const productiveH = devH + maintainH;
-        const internalCost = Number(dev.internalCost) || 0;
+        const totalCost = (Number(dev.internalCost) || 0) * 1.33;
         let dailyCHF = 0;
-        if (productiveH > 0) {
-            dailyCHF = (devH + (manageH * devH / productiveH)) * (internalCost * 1.33);
+        let dailyDevCHF = 0;
+        let dailyMainCHF = 0;
+        let dailyManageCHF = 0;
+
+        if (productiveH > 0 && load > 0) {
+            dailyCHF = (devH + (manageH * devH / productiveH)) * totalCost;
+
+            // Formula: hours / Load * Cost
+            const loadFactor = load / 100;
+            const rawCost = Number(dev.internalCost) || 0;
+
+            dailyDevCHF = (devH / loadFactor) * rawCost;
+            dailyMainCHF = (maintainH / loadFactor) * rawCost;
+            dailyManageCHF = (manageH / loadFactor) * rawCost;
         }
 
-        return { devH, maintainH, manageH, dailySP, pibBudget, dailyCHF };
+        return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF };
     };
 
     const filteredDevs = filterTeam === 'All' ? developers : developers.filter(d => d.team === filterTeam);
@@ -323,8 +335,10 @@ const CapacityDevelopers: React.FC = () => {
                                 <th className="px-4 py-3 text-left text-gray-500">Dev H</th>
                                 <th className="px-4 py-3 text-left text-gray-500">Mnt H</th>
                                 <th className="px-4 py-3 text-left text-gray-500">Mng H</th>
-                                <th className="px-4 py-3 text-left text-gray-500">PIB Budget</th>
-                                <th className="px-4 py-3 text-left text-gray-500">Daily CHF</th>
+                                <th className="px-4 py-3 text-left text-gray-500">Product Budget</th>
+                                <th className="px-4 py-3 text-left text-gray-500">Dev CHF</th>
+                                <th className="px-4 py-3 text-left text-gray-500">Main CHF</th>
+                                <th className="px-4 py-3 text-left text-gray-500">Mng CHF</th>
                                 <th className="px-4 py-3 text-left text-gray-500">SP/Day</th>
                             </tr>
                         </thead>
@@ -378,8 +392,10 @@ const CapacityDevelopers: React.FC = () => {
                                         <td className="px-4 py-2 text-gray-500">{calc.devH.toFixed(2)}</td>
                                         <td className="px-4 py-2 text-gray-500">{calc.maintainH.toFixed(2)}</td>
                                         <td className="px-4 py-2 text-gray-500">{calc.manageH.toFixed(2)}</td>
-                                        <td className="px-4 py-2 text-gray-500 font-medium bg-brand-primary/5">{calc.pibBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                                         <td className="px-4 py-2 text-gray-500 font-medium">{calc.dailyCHF.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                        <td className="px-4 py-2 text-gray-500 font-medium">{calc.dailyDevCHF.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                        <td className="px-4 py-2 text-gray-500 font-medium">{calc.dailyMainCHF.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                        <td className="px-4 py-2 text-gray-500 font-medium">{calc.dailyManageCHF.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                                         <td className="px-4 py-2 text-gray-500">{calc.dailySP.toFixed(2)}</td>
                                     </tr>
                                 );

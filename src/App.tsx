@@ -21,6 +21,7 @@ import CapacityDashboard from './pages/capacity/CapacityDashboard';
 import CapacityDevelopers from './pages/capacity/CapacityDevelopers';
 import CapacityAvailabilities from './pages/capacity/CapacityAvailabilities';
 import CapacityDetails from './pages/capacity/CapacityDetails';
+import CapacityTeamDetails from './pages/capacity/CapacityTeamDetails';
 import CapacityChanges from './pages/capacity/CapacityChanges';
 
 
@@ -68,6 +69,7 @@ const AppRoutes: React.FC = () => {
             <Route path="capacity-developers" element={<CapacityDevelopers />} />
             <Route path="capacity-availabilities" element={<CapacityAvailabilities />} />
             <Route path="capacity-details" element={<CapacityDetails />} />
+            <Route path="capacity-team-details" element={<CapacityTeamDetails />} />
             <Route path="capacity-changes" element={<CapacityChanges />} />
 
 

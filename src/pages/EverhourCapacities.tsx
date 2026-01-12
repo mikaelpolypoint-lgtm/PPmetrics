@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
 import Papa from 'papaparse';
-import { Upload, AlertCircle, FileText } from 'lucide-react';
+import { Upload, AlertCircle, FileText, Save } from 'lucide-react';
 import { CapacityService } from '../services/CapacityService';
 import type { CapacityDeveloper, CapacityAvailability } from '../types/capacity';
 
@@ -52,8 +52,9 @@ const EverhourCapacities: React.FC = () => {
                 await CapacityService.initDefaultSprints(currentPI);
                 const [devs, avails] = await Promise.all([
                     CapacityService.getDevelopers(currentPI),
-                    CapacityService.getAvailabilities(currentPI)
-                ]) as [CapacityDeveloper[], CapacityAvailability[]];
+                    CapacityService.getAvailabilities(currentPI),
+                    CapacityService.getEverhourData(currentPI)
+                ]) as [CapacityDeveloper[], CapacityAvailability[], any[]]; // any[] for EverhourTeamData to avoid deep type conflict locally if any
 
                 // 2. Build Date -> Sprint Map
                 const dateMap: Record<string, string> = {};
@@ -129,6 +130,16 @@ const EverhourCapacities: React.FC = () => {
                 });
 
                 setMetaData({ rates, devMap: dMap, dateToSprintMap: dateMap });
+
+                // 5. Populate Results from Saved Data (if any)
+                const savedData = (await Promise.all([devs, avails, CapacityService.getEverhourData(currentPI)]))[2];
+                if (savedData && savedData.length > 0) {
+                    const loadedResults: Record<string, TableRow[]> = {};
+                    savedData.forEach((d: any) => {
+                        loadedResults[d.team] = d.rows;
+                    });
+                    setResults(loadedResults);
+                }
 
             } catch (e: any) {
                 console.error("Init Error", e);
@@ -279,27 +290,60 @@ const EverhourCapacities: React.FC = () => {
         setResults(teamRows);
     };
 
+    const saveResults = async () => {
+        if (Object.keys(results).length === 0) return;
+        setLoading(true);
+        try {
+            const promises = Object.entries(results).map(([team, rows]) => {
+                return CapacityService.saveEverhourData({
+                    pi: currentPI,
+                    team,
+                    rows: rows as any, // Cast to match interface if needed
+                    lastUpdated: new Date().toISOString()
+                });
+            });
+            await Promise.all(promises);
+            alert('Results saved successfully!');
+        } catch (e: any) {
+            console.error("Save Error", e);
+            setError("Failed to save results: " + e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             <PageHeader
                 title={`${currentPI} Everhour Capacities`}
                 description="Import and analyze Everhour actuals by capacity category."
                 actions={
-                    <div className="relative">
-                        <input
-                            type="file"
-                            accept=".csv"
-                            ref={fileInputRef}
-                            onChange={handleFileUpload}
-                            className="hidden"
-                            id="eh-cap-upload"
-                        />
-                        <label
-                            htmlFor="eh-cap-upload"
-                            className="btn btn-primary flex items-center gap-2 cursor-pointer"
-                        >
-                            <Upload size={18} /> Import CSV
-                        </label>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <input
+                                type="file"
+                                accept=".csv"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                className="hidden"
+                                id="eh-cap-upload"
+                            />
+                            <label
+                                htmlFor="eh-cap-upload"
+                                className="btn btn-primary flex items-center gap-2 cursor-pointer"
+                            >
+                                <Upload size={18} /> Import CSV
+                            </label>
+                        </div>
+                        {Object.keys(results).length > 0 && (
+                            <button
+                                onClick={saveResults}
+                                className="btn btn-success flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                                disabled={loading}
+                            >
+                                <Save size={18} /> Save Results
+                            </button>
+                        )}
                     </div>
                 }
             />

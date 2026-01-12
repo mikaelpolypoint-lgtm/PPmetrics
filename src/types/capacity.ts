@@ -48,3 +48,17 @@ export interface PIConfiguration {
     ipSprint: boolean;
     ipSprintLengthWeeks: number;
 }
+
+export interface EverhourRow {
+    category: 'Dev' | 'Maintain' | 'Manage';
+    sprints: Record<string, number>;
+    total: number;
+    chf: number;
+}
+
+export interface EverhourTeamData {
+    pi: string;
+    team: string;
+    rows: EverhourRow[];
+    lastUpdated: string;
+}
