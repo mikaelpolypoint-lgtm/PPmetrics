@@ -121,13 +121,26 @@ const CapacityDashboard: React.FC = () => {
         // Calculate Product Budget (formerly Daily CHF)
         // Formula: (devH + (manageH * devH / (devH + maintainH))) * (internalCost * 1.33)
         const productiveH = devH + maintainH;
-        const internalCost = Number(dev.internalCost) || 0;
+        const totalCost = (Number(dev.internalCost) || 0) * 1.33;
         let dailyCHF = 0;
+        let dailyDevCHF = 0;
+        let dailyMainCHF = 0;
+        let dailyManageCHF = 0;
+
         if (productiveH > 0) {
-            dailyCHF = (devH + (manageH * devH / productiveH)) * (internalCost * 1.33);
+            dailyCHF = (devH + (manageH * devH / productiveH)) * totalCost;
+
+            if (load > 0) {
+                const loadFactor = load / 100;
+                const rawCost = Number(dev.internalCost) || 0;
+
+                dailyDevCHF = (devH / loadFactor) * rawCost;
+                dailyMainCHF = (maintainH / loadFactor) * rawCost;
+                dailyManageCHF = (manageH / loadFactor) * rawCost;
+            }
         }
 
-        return { devH, maintainH, manageH, dailySP, dailyCHF };
+        return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF };
     };
 
     const exportCSV = (title: string, field: keyof DevAttrs) => {

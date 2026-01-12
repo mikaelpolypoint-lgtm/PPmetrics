@@ -8,7 +8,7 @@ import Papa from 'papaparse';
 const TEAMS = ['Neon', 'H1', 'Zn2C', 'Tungsten', 'UI', 'TMGT', 'Admin'];
 
 const CapacityDevelopers: React.FC = () => {
-    const { currentPI, teams } = useData();
+    const { currentPI } = useData();
     const [developers, setDevelopers] = useState<CapacityDeveloper[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterTeam, setFilterTeam] = useState('All');
