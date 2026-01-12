@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { PIConfiguration } from '../types/capacity';
-import { Download, Upload } from 'lucide-react';
+import { Download, Upload, AlertTriangle } from 'lucide-react';
 
 interface PIConfigModalProps {
     isOpen: boolean;
@@ -101,6 +101,23 @@ export const PIConfigModal: React.FC<PIConfigModalProps> = ({ isOpen, onClose, o
                             value={config.startDate}
                             onChange={e => setConfig({ ...config, startDate: e.target.value })}
                         />
+                        {config.startDate && (() => {
+                            const [y, m, d] = config.startDate.split('-').map(Number);
+                            const day = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+                            // 4 is Thursday
+                            if (day !== 4) {
+                                return (
+                                    <div className="flex items-start gap-2 mt-2 p-2 bg-yellow-50 text-yellow-800 text-xs rounded border border-yellow-200">
+                                        <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                                        <div>
+                                            <strong>Note:</strong> Standard sprints usually start on a <u>Thursday</u>.
+                                            You selected a {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day]}.
+                                        </div>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })()}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

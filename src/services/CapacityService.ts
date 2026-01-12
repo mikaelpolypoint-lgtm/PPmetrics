@@ -42,7 +42,11 @@ export const CapacityService = {
 
         // 2. Generate new structure
         const newRows: CapacityAvailability[] = [];
-        let currentDate = new Date(config.startDate);
+
+        // Ensure UTC Midnight to match toISOString/split logic safely
+        // config.startDate is "YYYY-MM-DD"
+        const [startYear, startMonth, startDay] = config.startDate.split('-').map(Number);
+        let currentDate = new Date(Date.UTC(startYear, startMonth - 1, startDay));
 
         // Regular Sprints
         for (let i = 1; i <= config.sprintCount; i++) {
@@ -52,7 +56,7 @@ export const CapacityService = {
             const durationDays = weeks * 7;
 
             for (let d = 0; d < durationDays; d++) {
-                const day = currentDate.getDay();
+                const day = currentDate.getUTCDay(); // 0=Sun, 6=Sat
                 if (day !== 0 && day !== 6) { // Skip weekends
                     newRows.push({
                         date: currentDate.toISOString().split('T')[0],
@@ -60,7 +64,7 @@ export const CapacityService = {
                         pi: config.pi
                     });
                 }
-                currentDate.setDate(currentDate.getDate() + 1);
+                currentDate.setUTCDate(currentDate.getUTCDate() + 1);
             }
         }
 
@@ -69,7 +73,7 @@ export const CapacityService = {
             const sprintName = `${config.pi}-IP`;
             const durationDays = config.ipSprintLengthWeeks * 7;
             for (let d = 0; d < durationDays; d++) {
-                const day = currentDate.getDay();
+                const day = currentDate.getUTCDay();
                 if (day !== 0 && day !== 6) {
                     newRows.push({
                         date: currentDate.toISOString().split('T')[0],
@@ -77,7 +81,7 @@ export const CapacityService = {
                         pi: config.pi
                     });
                 }
-                currentDate.setDate(currentDate.getDate() + 1);
+                currentDate.setUTCDate(currentDate.getUTCDate() + 1);
             }
         }
 
