@@ -22,7 +22,7 @@ import CapacityDevelopers from './pages/capacity/CapacityDevelopers';
 import CapacityAvailabilities from './pages/capacity/CapacityAvailabilities';
 import CapacityDetails from './pages/capacity/CapacityDetails';
 import CapacityChanges from './pages/capacity/CapacityChanges';
-import CapacityImprovements from './pages/capacity/CapacityImprovements';
+
 
 // Helper to sync URL PI with Context PI
 const PISync: React.FC = () => {
@@ -69,7 +69,7 @@ const AppRoutes: React.FC = () => {
             <Route path="capacity-availabilities" element={<CapacityAvailabilities />} />
             <Route path="capacity-details" element={<CapacityDetails />} />
             <Route path="capacity-changes" element={<CapacityChanges />} />
-            <Route path="capacity-improvements" element={<CapacityImprovements />} />
+
 
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>

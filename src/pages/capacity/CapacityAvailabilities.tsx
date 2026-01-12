@@ -129,12 +129,26 @@ const CapacityAvailabilities: React.FC = () => {
         const reader = new FileReader();
         reader.onload = (evt) => {
             const text = evt.target?.result as string;
-            const delimiter = text.split('\n')[0].includes(';') ? ';' : ',';
+            // Improved delimiter detection
+            const firstLine = text.split('\n')[0];
+            const delimiter = firstLine.includes(';') ? ';' : ',';
+
+            console.log("Importing CSV...", { size: text.length, delimiter, firstLine });
+
             Papa.parse(text, {
-                header: true, delimiter, skipEmptyLines: true,
+                header: true,
+                delimiter,
+                skipEmptyLines: true,
                 complete: (results) => {
+                    if (results.errors && results.errors.length > 0) {
+                        console.warn("CSV Parse Errors:", results.errors);
+                    }
+
                     const data = results.data as any[];
+                    console.log("Parsed rows:", data.length);
+
                     let updatedCount = 0;
+                    let matchFailures = 0;
                     const newAvails = [...availabilities];
 
                     const cleanData = data.map(row => {
@@ -154,21 +168,44 @@ const CapacityAvailabilities: React.FC = () => {
 
                     const parseDate = (d: string) => {
                         if (!d) return null;
-                        const p = d.split('.');
-                        if (p.length === 3) {
-                            let y = p[2];
+                        const cleanD = d.trim();
+                        // Try DD.MM.YYYY
+                        const partsDot = cleanD.split('.');
+                        if (partsDot.length === 3) {
+                            let y = partsDot[2];
                             if (y.length === 2) y = '20' + y;
-                            return `${y}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+                            const m = partsDot[1].padStart(2, '0');
+                            const day = partsDot[0].padStart(2, '0');
+                            return `${y}-${m}-${day}`;
                         }
-                        return d; // fallback (YYYY-MM-DD)
+                        // Try YYYY-MM-DD
+                        const partsDash = cleanD.split('-');
+                        if (partsDash.length === 3) {
+                            // Check if first part is year (4 digits)
+                            if (partsDash[0].length === 4) return cleanD;
+                            // Maybe DD-MM-YYYY? Rare but possible
+                            return `${partsDash[2]}-${partsDash[1]}-${partsDash[0]}`;
+                        }
+                        return cleanD; // fallback
                     };
 
-                    cleanData.forEach(csvRow => {
+                    cleanData.forEach((csvRow, idx) => {
                         let dateKey = Object.keys(csvRow).find(k => k.toUpperCase() === 'DATUM' || k.toUpperCase() === 'DATE');
-                        if (!dateKey) dateKey = Object.keys(csvRow).find(k => /^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(csvRow[k]));
-                        if (!dateKey) return;
-                        const csvDate = parseDate(csvRow[dateKey]);
-                        if (!csvDate) return;
+                        // Relaxed search for date column if explicit key not found
+                        if (!dateKey) dateKey = Object.keys(csvRow).find(k => /^\d{1,2}[.-]\d{1,2}[.-]\d{2,4}$/.test(csvRow[k]));
+
+                        if (!dateKey) {
+                            if (idx < 5) console.warn("Row missing date key", csvRow);
+                            return;
+                        }
+
+                        const rawDate = csvRow[dateKey];
+                        const csvDate = parseDate(rawDate);
+
+                        if (!csvDate) {
+                            if (idx < 5) console.warn("Failed to parse date", rawDate);
+                            return;
+                        }
 
                         const targetIndex = newAvails.findIndex(r => r.date === csvDate);
                         if (targetIndex !== -1) {
@@ -186,8 +223,13 @@ const CapacityAvailabilities: React.FC = () => {
                                     };
                                 }
                             });
+                        } else {
+                            matchFailures++;
+                            if (matchFailures < 3) console.log("Date not found in calendar:", csvDate);
                         }
                     });
+
+                    console.log(`Updated: ${updatedCount}, Failures: ${matchFailures}`);
 
                     if (updatedCount > 0) {
                         if (confirm(`Updated ${updatedCount} days from CSV. Apply changes?`)) {
@@ -195,7 +237,7 @@ const CapacityAvailabilities: React.FC = () => {
                             setIsDirty(true);
                         }
                     } else {
-                        alert('No matching dates found.');
+                        alert(`No matching dates found. (Parsed ${data.length} rows, ${matchFailures} dates not in calendar). Check console for details.`);
                     }
                 }
             });

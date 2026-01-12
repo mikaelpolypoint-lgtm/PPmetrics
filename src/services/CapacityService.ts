@@ -1,6 +1,6 @@
 import { db } from '../lib/firebase';
 import { collection, getDocs, setDoc, doc, query, where, deleteDoc, getDoc } from 'firebase/firestore';
-import type { CapacityDeveloper, CapacityAvailability, CapacityImprovement } from '../types/capacity';
+import type { CapacityDeveloper, CapacityAvailability, CapacityImprovement, PIConfiguration } from '../types/capacity';
 
 export const CapacityService = {
     // --- Developers ---
@@ -18,6 +18,89 @@ export const CapacityService = {
 
     async deleteDeveloper(pi: string, key: string): Promise<void> {
         await deleteDoc(doc(db, "developers", `${pi}_${key}`));
+    },
+
+    async deleteAllDevelopers(pi: string): Promise<void> {
+        const devs = await this.getDevelopers(pi);
+        const promises = devs.map(d => deleteDoc(doc(db, "developers", `${pi}_${d.key}`)));
+        await Promise.all(promises);
+    },
+
+    // --- PI Config ---
+    async getPIConfig(pi: string): Promise<PIConfiguration | null> {
+        const docSnap = await getDoc(doc(db, "pi_configs", pi));
+        return docSnap.exists() ? (docSnap.data() as PIConfiguration) : null;
+    },
+
+    async savePIConfig(config: PIConfiguration): Promise<void> {
+        await setDoc(doc(db, "pi_configs", config.pi), config);
+    },
+
+    async applyPIConfiguration(config: PIConfiguration): Promise<void> {
+        // 1. Save Config
+        await this.savePIConfig(config);
+
+        // 2. Generate new structure
+        const newRows: CapacityAvailability[] = [];
+        let currentDate = new Date(config.startDate);
+
+        // Regular Sprints
+        for (let i = 1; i <= config.sprintCount; i++) {
+            const sprintName = `${config.pi}-S${i}`;
+            // Use specific length or default to 2
+            const weeks = config.sprintLengths?.[i - 1] ?? 2;
+            const durationDays = weeks * 7;
+
+            for (let d = 0; d < durationDays; d++) {
+                const day = currentDate.getDay();
+                if (day !== 0 && day !== 6) { // Skip weekends
+                    newRows.push({
+                        date: currentDate.toISOString().split('T')[0],
+                        sprint: sprintName,
+                        pi: config.pi
+                    });
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+
+        // IP Sprint
+        if (config.ipSprint) {
+            const sprintName = `${config.pi}-IP`;
+            const durationDays = config.ipSprintLengthWeeks * 7;
+            for (let d = 0; d < durationDays; d++) {
+                const day = currentDate.getDay();
+                if (day !== 0 && day !== 6) {
+                    newRows.push({
+                        date: currentDate.toISOString().split('T')[0],
+                        sprint: sprintName,
+                        pi: config.pi
+                    });
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+
+        // 3. Merge with existing data
+        const existingRows = await this.getAvailabilities(config.pi);
+        const existingMap = new Map(existingRows.map(r => [r.date, r]));
+
+        const finalRows = newRows.map(newRow => {
+            if (existingMap.has(newRow.date)) {
+                // Keep existing values, update sprint name
+                return { ...existingMap.get(newRow.date), sprint: newRow.sprint, pi: config.pi } as CapacityAvailability;
+            }
+            return newRow;
+        });
+
+        // 4. Delete orphaned rows
+        const newDates = new Set(finalRows.map(r => r.date));
+        const toDelete = existingRows.filter(r => !newDates.has(r.date));
+
+        const deletePromises = toDelete.map(r => deleteDoc(doc(db, "availabilities", `${config.pi}_${r.date}`)));
+        await Promise.all(deletePromises);
+
+        await this.saveAvailability(config.pi, finalRows);
     },
 
     // --- Availabilities ---
@@ -82,84 +165,10 @@ export const CapacityService = {
         }
     },
 
-    async ensureDefaults(pi: string): Promise<void> {
-        const DEFAULT_DEVELOPERS: Partial<CapacityDeveloper>[] = [
-            { team: 'Tungsten', key: 'JRE' }, { team: 'Tungsten', key: 'DKA' }, { team: 'Tungsten', key: 'LRU' },
-            { team: 'Tungsten', key: 'RGA' }, { team: 'Tungsten', key: 'LOR' }, { team: 'Tungsten', key: 'OMO' },
-            { team: 'Neon', key: 'BRO' }, { team: 'Neon', key: 'MPL' }, { team: 'Neon', key: 'LBU' },
-            { team: 'Neon', key: 'RTH' }, { team: 'Neon', key: 'IWI' }, { team: 'Neon', key: 'STH' },
-            { team: 'H1', key: 'TSC' }, { team: 'H1', key: 'GRO' },
-            { team: 'H1', key: 'MBR' }, { team: 'H1', key: 'PSC' }, { team: 'H1', key: 'SFR' },
-            { team: 'H1', key: 'DMA' }, { team: 'H1', key: 'VNA' }, { team: 'H1', key: 'RBU' },
-            { team: 'Zn2C', key: 'JEI' }, { team: 'Zn2C', key: 'YHU' }, { team: 'Zn2C', key: 'PNI' },
-            { team: 'Zn2C', key: 'VTS' }, { team: 'Zn2C', key: 'PSA' }, { team: 'Zn2C', key: 'MMA' },
-            { team: 'Zn2C', key: 'LMA' }, { team: 'Zn2C', key: 'RSA' }, { team: 'Zn2C', key: 'NAC' },
-            // New Teams
-            { team: 'UI', key: 'KFI' }, { team: 'UI', key: 'SOL' },
-            { team: 'TMGT', key: 'JDE' }, { team: 'TMGT', key: 'VSC' },
-            { team: 'Admin', key: 'CIR' }, { team: 'Admin', key: 'MVA' }, { team: 'Admin', key: 'NRA' },
-            { team: 'Admin', key: 'BAS' }, { team: 'Admin', key: 'DGR' }, { team: 'Admin', key: 'RBL' }, { team: 'Admin', key: 'LSO' }
-        ];
-
-        const NEW_KEYS = ['KFI', 'SOL', 'JDE', 'VSC', 'CIR', 'MVA', 'NRA', 'BAS', 'DGR', 'RBL', 'LSO'];
-
-        let isInit = false;
-        let isV2 = false;
-
-        try {
-            const docSnap = await getDoc(doc(db, "metadata", `${pi}_defaults_init`));
-            isInit = docSnap.exists();
-            if (isInit) {
-                const v2Snap = await getDoc(doc(db, "metadata", `${pi}_defaults_v2`));
-                isV2 = v2Snap.exists();
-            }
-        } catch (e) {
-            console.warn("Error checking defaults init", e);
-        }
-
-        if (isInit && isV2) return;
-
-        const currentDevs = await this.getDevelopers(pi);
-        const currentMap = new Map(currentDevs.map(d => [d.key, d]));
-
-        for (const def of DEFAULT_DEVELOPERS) {
-            const key = def.key!;
-            const isNewKey = NEW_KEYS.includes(key);
-            const shouldAdd = (!isInit && !currentMap.has(key)) ||
-                (!isV2 && isNewKey && !currentMap.has(key)) ||
-                (key === 'YHU');
-
-            if (shouldAdd) {
-                const existing = currentMap.get(key) || {};
-                const newDev: CapacityDeveloper = {
-                    key: key,
-                    team: def.team || 'Unknown',
-                    name: key,
-                    stack: 'Fullstack',
-                    dailyHours: 8,
-                    workRatio: 100,
-                    internalCost: 100,
-                    load: 90,
-                    manageRatio: 0,
-                    developRatio: 80,
-                    maintainRatio: 20,
-                    velocity: 1,
-                    pi: pi,
-                    ...(existing as any)
-                };
-
-                if (key === 'YHU') newDev.team = def.team!;
-
-                await this.saveDeveloper(pi, newDev);
-            }
-        }
-
-        try {
-            if (!isInit) await setDoc(doc(db, "metadata", `${pi}_defaults_init`), { initialized: true });
-            if (!isV2) await setDoc(doc(db, "metadata", `${pi}_defaults_v2`), { initialized: true });
-        } catch (e) {
-            console.warn("Error setting defaults init", e);
-        }
+    async ensureDefaults(_pi: string): Promise<void> {
+        // Disabled by user request - defaults should not be created automatically
+        // Instead, valid developers must be imported via CSV or added manually
+        return;
     },
 
     // --- Improvements ---

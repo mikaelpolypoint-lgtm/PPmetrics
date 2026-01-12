@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
 import { CapacityService } from '../services/CapacityService';
-import type { CapacityAvailability } from '../types/capacity';
-import { Save } from 'lucide-react';
+import type { CapacityAvailability, PIConfiguration } from '../types/capacity';
+import { Save, Settings } from 'lucide-react';
+import { PIConfigModal } from '../components/PIConfigModal';
 
 const CalendarPage: React.FC = () => {
     const { currentPI } = useData();
@@ -11,6 +12,8 @@ const CalendarPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [modifiedDates, setModifiedDates] = useState<Set<string>>(new Set());
     const [error, setError] = useState<string | null>(null);
+    const [isConfigOpen, setIsConfigOpen] = useState(false);
+    const [piConfig, setPiConfig] = useState<PIConfiguration | null>(null);
 
     useEffect(() => {
         loadData();
@@ -21,7 +24,14 @@ const CalendarPage: React.FC = () => {
         setError(null);
         try {
             await CapacityService.initDefaultSprints(currentPI);
-            const data = await CapacityService.getAvailabilities(currentPI);
+            const [data, config] = await Promise.all([
+                CapacityService.getAvailabilities(currentPI),
+                CapacityService.getPIConfig(currentPI)
+            ]);
+
+            if (config) {
+                setPiConfig(config);
+            }
 
             // Safe sort
             data.sort((a, b) => {
@@ -97,12 +107,56 @@ const CalendarPage: React.FC = () => {
         }
     };
 
+    const handleOpenConfig = async () => {
+        if (piConfig) {
+            setIsConfigOpen(true);
+            return;
+        }
+
+        try {
+            const existing = await CapacityService.getPIConfig(currentPI);
+            if (existing) {
+                setPiConfig(existing);
+            } else {
+                // Determine sensible default start date (approximate based on PI name if possible? or just Today)
+                setPiConfig({
+                    pi: currentPI,
+                    startDate: new Date().toISOString().split('T')[0],
+                    sprintCount: 5,
+                    sprintLengths: [2, 2, 2, 2, 2],
+                    ipSprint: true,
+                    ipSprintLengthWeeks: 2
+                });
+            }
+            setIsConfigOpen(true);
+        } catch (e) {
+            console.error("Error loading PI config", e);
+        }
+    };
+
+    const handleSaveConfig = async (config: PIConfiguration) => {
+        await CapacityService.applyPIConfiguration(config);
+        setPiConfig(config);
+        loadData(); // Reload calendar
+    };
+
     const getSprintOptions = () => {
         const sprints = [];
-        for (let i = 1; i <= 6; i++) {
-            sprints.push(`${currentPI}-S${i}`);
+        if (piConfig) {
+            for (let i = 1; i <= piConfig.sprintCount; i++) {
+                sprints.push(`${currentPI}-S${i}`);
+            }
+            if (piConfig.ipSprint) {
+                sprints.push(`${currentPI}-IP`);
+            }
+        } else {
+            // Fallback (or derive from current data if availabilities exist?)
+            // Just use default 6 sprints for safe fallback
+            for (let i = 1; i <= 6; i++) {
+                sprints.push(`${currentPI}-S${i}`);
+            }
+            sprints.push(`${currentPI}-IP`);
         }
-        sprints.push(`${currentPI}-IP`);
         return sprints;
     };
 
@@ -137,7 +191,11 @@ const CalendarPage: React.FC = () => {
                         <button onClick={saveChanges} className="btn btn-primary flex items-center gap-2">
                             <Save size={18} /> Save Changes
                         </button>
-                    ) : undefined
+                    ) : (
+                        <button onClick={handleOpenConfig} className="btn btn-secondary flex items-center gap-2">
+                            <Settings size={18} /> Configure PI
+                        </button>
+                    )
                 }
             />
 
@@ -200,6 +258,16 @@ const CalendarPage: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {piConfig && (
+                <PIConfigModal
+                    isOpen={isConfigOpen}
+                    onClose={() => setIsConfigOpen(false)}
+                    onSave={handleSaveConfig}
+                    initialConfig={piConfig}
+                    pi={currentPI}
+                />
+            )}
         </div>
     );
 };

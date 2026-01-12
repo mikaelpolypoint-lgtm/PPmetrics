@@ -39,3 +39,12 @@ export interface CapacitySprint {
     end: string;
     rows?: CapacityAvailability[];
 }
+
+export interface PIConfiguration {
+    pi: string;
+    startDate: string; // YYYY-MM-DD
+    sprintLengths: number[]; // Duration in weeks for each sprint
+    sprintCount: number;
+    ipSprint: boolean;
+    ipSprintLengthWeeks: number;
+}

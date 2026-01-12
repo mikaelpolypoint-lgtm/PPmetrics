@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { PIS } from '../types';
-import { LayoutDashboard, Users, BarChart3, Settings, Database, Clock, Layers, FileText, Activity, PieChart, Table } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Database, Clock, Layers, FileText, Activity, PieChart, Table } from 'lucide-react';
 import clsx from 'clsx';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -38,7 +38,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         { path: `/${currentPI}/capacity-availabilities`, label: 'Availabilities', icon: Clock },
         { path: `/${currentPI}/capacity-details`, label: 'Details', icon: FileText },
         { path: `/${currentPI}/capacity-changes`, label: 'Changes', icon: Activity },
-        { path: `/${currentPI}/capacity-improvements`, label: 'Improvements', icon: Layers },
+
         { path: `/${currentPI}/calendar`, label: 'Calendar', icon: Clock },
     ];
 
@@ -110,15 +110,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </div>
                 </nav>
 
-                <div className="p-4 border-t border-gray-100">
-                    <div className="flex flex-col gap-2">
-                        <button className="flex items-center gap-3 px-3 py-2 text-sm text-text-muted hover:text-brand-primary hover:bg-gray-50 rounded-lg transition-colors w-full text-left">
-                            <Settings size={18} />
-                            <span>Settings</span>
-                        </button>
 
-                    </div>
-                </div>
             </aside>
 
             {/* Main Content */}

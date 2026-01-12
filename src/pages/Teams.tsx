@@ -14,7 +14,8 @@ const Teams: React.FC = () => {
     const [addForm, setAddForm] = useState<Partial<Team>>({
         name: '',
         spValue: 0,
-        pibBudget: 0
+        pibBudget: 0,
+        costOfDevH: 0
     });
 
     // Capacity Data State
@@ -137,11 +138,12 @@ const Teams: React.FC = () => {
                 id: `team-${Date.now()}`,
                 name: addForm.name,
                 spValue: addForm.spValue || 0,
-                pibBudget: addForm.pibBudget || 0
+                pibBudget: addForm.pibBudget || 0,
+                costOfDevH: addForm.costOfDevH || 0
             };
             addTeam(newTeam);
             setIsAdding(false);
-            setAddForm({ name: '', spValue: 0, pibBudget: 0 });
+            setAddForm({ name: '', spValue: 0, pibBudget: 0, costOfDevH: 0 });
         }
     };
 
@@ -207,7 +209,14 @@ const Teams: React.FC = () => {
                             />
                         </div>
                         <div>
-                            {/* Spacer - removed Hourly Rate input */}
+                            <label className="block text-xs text-text-muted mb-1">Cost of Dev h (CHF)</label>
+                            <input
+                                type="number"
+                                className="input"
+                                placeholder="0"
+                                value={addForm.costOfDevH}
+                                onChange={e => handleAddChange('costOfDevH', Number(e.target.value))}
+                            />
                         </div>
                         <div>
                             {/* Spacer */}
@@ -228,6 +237,7 @@ const Teams: React.FC = () => {
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Team Name</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">SP Value (CHF)</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">PIB Budget</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Cost of Dev h (CHF)</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Rate (CHF)<br /><span className="text-[10px] font-normal normal-case">(Calculated)</span></th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">Total Dev h<br /><span className="text-[10px] font-normal normal-case">(Ohne IP)</span></th>
                                 <th className="px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider">SP Planned</th>
@@ -269,6 +279,14 @@ const Teams: React.FC = () => {
                                                     />
                                                 </td>
                                                 <td className="px-6 py-3">
+                                                    <input
+                                                        type="number"
+                                                        className="input py-1 px-2 text-sm"
+                                                        value={editForm?.costOfDevH || 0}
+                                                        onChange={e => handleChange('costOfDevH', Number(e.target.value))}
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-3">
                                                     <span className="text-text-muted italic text-sm">Calculated</span>
                                                 </td>
                                                 <td className="px-6 py-3">
@@ -296,6 +314,7 @@ const Teams: React.FC = () => {
                                                 <td className="px-6 py-4 font-medium text-text-main">{team.name}</td>
                                                 <td className="px-6 py-4 text-text-main">{team.spValue} CHF</td>
                                                 <td className="px-6 py-4 text-text-main">{team.pibBudget} CHF</td>
+                                                <td className="px-6 py-4 text-text-main">{team.costOfDevH || 0} CHF</td>
                                                 <td className="px-6 py-4 text-text-main font-mono bg-green-50/50">
                                                     {calculatedRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CHF
                                                 </td>
@@ -327,7 +346,7 @@ const Teams: React.FC = () => {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

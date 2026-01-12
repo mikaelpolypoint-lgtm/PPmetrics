@@ -3,6 +3,7 @@ export interface Team {
   name: string;
   spValue: number; // CHF
   pibBudget: number;
+  costOfDevH?: number; // CHF
 }
 
 export interface Topic {

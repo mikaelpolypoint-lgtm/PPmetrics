@@ -8,7 +8,7 @@ import Papa from 'papaparse';
 const TEAMS = ['Neon', 'H1', 'Zn2C', 'Tungsten', 'UI', 'TMGT', 'Admin'];
 
 const CapacityDevelopers: React.FC = () => {
-    const { currentPI } = useData();
+    const { currentPI, teams } = useData();
     const [developers, setDevelopers] = useState<CapacityDeveloper[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterTeam, setFilterTeam] = useState('All');
@@ -23,6 +23,9 @@ const CapacityDevelopers: React.FC = () => {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const csvInputRef = useRef<HTMLInputElement>(null);
+
+    // Delete Modal state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -90,6 +93,25 @@ const CapacityDevelopers: React.FC = () => {
                 next.delete(key);
                 return next;
             });
+        }
+    };
+
+    const openDeleteAllModal = () => {
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDeleteAll = async () => {
+        setLoading(true);
+        try {
+            await CapacityService.deleteAllDevelopers(currentPI);
+            await loadData();
+            // alert("All developers deleted."); // Optional: Success feedback could be a toast, but table empty is clear enough
+        } catch (e) {
+            console.error(e);
+            alert("Error deleting developers");
+        } finally {
+            setLoading(false);
+            setIsDeleteModalOpen(false);
         }
     };
 
@@ -197,7 +219,23 @@ const CapacityDevelopers: React.FC = () => {
         const maintainH = (dailyHours * (load / 100) * (maintainRatio / 100));
         const manageH = (dailyHours * (load / 100) * (manageRatio / 100));
         const dailySP = (devH / 8) * velocity;
-        return { devH, maintainH, manageH, dailySP };
+
+        // Find team cost
+        const teamObj = teams.find(t => t.name === dev.team);
+        const costOfDevH = teamObj?.costOfDevH || 0;
+        const pibBudget = devH * costOfDevH;
+
+        // Calculate Daily CHF
+        // Formula: (devH + (manageH * devH / (devH + maintainH))) * (internalCost * 1.33)
+        // Guard against division by zero
+        const productiveH = devH + maintainH;
+        const internalCost = Number(dev.internalCost) || 0;
+        let dailyCHF = 0;
+        if (productiveH > 0) {
+            dailyCHF = (devH + (manageH * devH / productiveH)) * (internalCost * 1.33);
+        }
+
+        return { devH, maintainH, manageH, dailySP, pibBudget, dailyCHF };
     };
 
     const filteredDevs = filterTeam === 'All' ? developers : developers.filter(d => d.team === filterTeam);
@@ -257,6 +295,10 @@ const CapacityDevelopers: React.FC = () => {
                             <Save size={16} /> Save Changes
                         </button>
                     )}
+
+                    <button onClick={openDeleteAllModal} className="p-2 text-red-500 hover:bg-red-50 rounded border border-transparent hover:border-red-200" title="Delete All Developers">
+                        <Trash2 size={16} />
+                    </button>
                 </div>
             </div>
 
@@ -281,6 +323,8 @@ const CapacityDevelopers: React.FC = () => {
                                 <th className="px-4 py-3 text-left text-gray-500">Dev H</th>
                                 <th className="px-4 py-3 text-left text-gray-500">Mnt H</th>
                                 <th className="px-4 py-3 text-left text-gray-500">Mng H</th>
+                                <th className="px-4 py-3 text-left text-gray-500">PIB Budget</th>
+                                <th className="px-4 py-3 text-left text-gray-500">Daily CHF</th>
                                 <th className="px-4 py-3 text-left text-gray-500">SP/Day</th>
                             </tr>
                         </thead>
@@ -334,6 +378,8 @@ const CapacityDevelopers: React.FC = () => {
                                         <td className="px-4 py-2 text-gray-500">{calc.devH.toFixed(2)}</td>
                                         <td className="px-4 py-2 text-gray-500">{calc.maintainH.toFixed(2)}</td>
                                         <td className="px-4 py-2 text-gray-500">{calc.manageH.toFixed(2)}</td>
+                                        <td className="px-4 py-2 text-gray-500 font-medium bg-brand-primary/5">{calc.pibBudget.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                                        <td className="px-4 py-2 text-gray-500 font-medium">{calc.dailyCHF.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
                                         <td className="px-4 py-2 text-gray-500">{calc.dailySP.toFixed(2)}</td>
                                     </tr>
                                 );
@@ -342,6 +388,27 @@ const CapacityDevelopers: React.FC = () => {
                     </table>
                 </div>
             </div>
+
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 w-[400px] max-w-[90%] flex flex-col gap-4 shadow-xl">
+                        <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-bold text-red-600">⚠ Delete All Developers?</h3>
+                            <button onClick={() => setIsDeleteModalOpen(false)} className="text-gray-500 hover:text-black">&times;</button>
+                        </div>
+                        <p className="text-gray-700">
+                            Are you sure you want to delete <strong>ALL</strong> developers for <strong>{currentPI}</strong>?
+                        </p>
+                        <p className="text-sm text-red-600 font-medium bg-red-50 p-3 rounded">
+                            This action cannot be undone. All developer data, including sprint assignments, will be lost permanently.
+                        </p>
+                        <div className="flex justify-end gap-3 pt-4 border-t">
+                            <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded border">Cancel</button>
+                            <button onClick={confirmDeleteAll} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 font-bold shadow-sm">Delete All</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {isModalOpen && modalDev && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

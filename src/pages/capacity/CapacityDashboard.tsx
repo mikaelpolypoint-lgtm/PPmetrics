@@ -15,10 +15,12 @@ interface DevAttrs {
     maintainH: number;
     manageH: number;
     dailySP: number;
+    pibBudget: number;
+    dailyCHF: number;
 }
 
 const CapacityDashboard: React.FC = () => {
-    const { currentPI } = useData();
+    const { currentPI, teams: teamListData } = useData(); // Access teams data
     const [developers, setDevelopers] = useState<CapacityDeveloper[]>([]);
     const [availabilities, setAvailabilities] = useState<CapacityAvailability[]>([]);
     const [loading, setLoading] = useState(true);
@@ -126,7 +128,21 @@ const CapacityDashboard: React.FC = () => {
         const manageH = (dailyHours * (load / 100) * (manageRatio / 100));
         const dailySP = (devH / 8) * velocity;
 
-        return { devH, maintainH, manageH, dailySP };
+        // Calculate PIB Budget
+        const teamObj = teamListData.find(t => t.name === dev.team);
+        const costOfDevH = teamObj?.costOfDevH || 0;
+        const pibBudget = devH * costOfDevH;
+
+        // Calculate Daily CHF
+        // Formula: (devH + (manageH * devH / (devH + maintainH))) * (internalCost * 1.33)
+        const productiveH = devH + maintainH;
+        const internalCost = Number(dev.internalCost) || 0;
+        let dailyCHF = 0;
+        if (productiveH > 0) {
+            dailyCHF = (devH + (manageH * devH / productiveH)) * (internalCost * 1.33);
+        }
+
+        return { devH, maintainH, manageH, dailySP, pibBudget, dailyCHF };
     };
 
     const exportCSV = (title: string, field: keyof DevAttrs) => {
@@ -196,7 +212,9 @@ const CapacityDashboard: React.FC = () => {
         { title: "SP Load", field: "dailySP" as const },
         { title: "Dev h", field: "devH" as const },
         { title: "Maintain h", field: "maintainH" as const },
-        { title: "Manage h", field: "manageH" as const }
+        { title: "Manage h", field: "manageH" as const },
+        { title: "PIB Budget (CHF)", field: "pibBudget" as const },
+        { title: "Daily CHF", field: "dailyCHF" as const }
     ];
 
     return (
@@ -276,7 +294,11 @@ const DashboardTableBody: React.FC<{
     getSprintCapacity: (s: string, k: string) => number;
     getDevAttrs: (d: CapacityDeveloper) => DevAttrs;
 }> = ({ sprints, developers, field, filterTeam, getSprintCapacity, getDevAttrs }) => {
-    const format = (n: number) => field === 'dailySP' ? n.toFixed(1) : Math.round(n);
+    const format = (n: number) => {
+        if (field === 'dailySP') return n.toFixed(1);
+        if (field === 'pibBudget' || field === 'dailyCHF') return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        return Math.round(n).toString();
+    };
 
     // Calculate totals
     const devTotals: Record<string, number> = {};
