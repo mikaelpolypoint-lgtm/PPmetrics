@@ -5,7 +5,7 @@ import type { CapacityDeveloper, CapacityAvailability } from '../../types/capaci
 import { Download } from 'lucide-react';
 import Papa from 'papaparse';
 
-import InfoTooltip from '../../components/InfoTooltip';
+// Removed unused InfoTooltip imports
 import DashboardTableBody from '../../components/capacity/DashboardTableBody';
 import type { SprintData, DevAttrs } from '../../components/capacity/DashboardTableBody';
 
@@ -207,15 +207,24 @@ const CapacityDashboard: React.FC = () => {
 
     if (loading) return <div className="p-8 text-center text-text-muted">Loading Capacity Dashboard...</div>;
 
+    // Tables configuration
     const tables = [
-        { title: "SP Load", field: "dailySP" as const, description: "Daily Story Points capacity (Dev H / 8 * Velocity)." },
-        { title: "Dev h", field: "devH" as const, description: "Daily hours available for feature development." },
-        { title: "Maintain h", field: "maintainH" as const, description: "Daily hours reserved for maintenance (bugs, support)." },
-        { title: "Manage h", field: "manageH" as const, description: "Daily hours reserved for management and coordination." }
+        { title: "SP Load", field: "dailySP" as const },
+        { title: "Dev h", field: "devH" as const },
+        { title: "Maintain h", field: "maintainH" as const },
+        { title: "Manage h", field: "manageH" as const }
     ];
 
     return (
         <div className="space-y-6">
+            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
+                <p>
+                    <strong>Capacity Dashboard</strong> provides an overview of the total available capacity for each sprint.
+                    It aggregates data from individual developers to show total <strong>Story Points</strong>, <strong>Development Hours</strong>,
+                    <strong>Maintenance Hours</strong>, and <strong>Management Hours</strong>. Use the filters to drill down by Team or Sprint.
+                </p>
+            </div>
+
             <div className="flex items-center gap-4 bg-bg-surface p-4 rounded-xl border border-border shadow-sm">
                 <div className="flex flex-col gap-1">
                     <label className="text-xs font-bold text-text-muted uppercase">Team</label>
@@ -245,7 +254,6 @@ const CapacityDashboard: React.FC = () => {
                         <div className="flex items-center justify-between p-4 border-b border-border bg-gray-50/50">
                             <h3 className="font-semibold text-text-main flex items-center">
                                 {table.title}
-                                <InfoTooltip text={table.description} />
                             </h3>
                             <button
                                 onClick={() => exportCSV(table.title, table.field)}

@@ -4,7 +4,7 @@ import { CapacityService } from '../../services/CapacityService';
 import type { CapacityDeveloper, CapacityAvailability } from '../../types/capacity';
 import { Download } from 'lucide-react';
 import Papa from 'papaparse';
-import InfoTooltip from '../../components/InfoTooltip';
+// Removed InfoTooltip import
 
 interface SprintData {
     name: string;
@@ -189,17 +189,25 @@ const CapacityTeamDetails: React.FC = () => {
 
     if (loading) return <div className="p-8 text-center text-text-muted">Loading Team Capacity...</div>;
 
+    // Tables configuration
     const tables = [
-        { title: "SP Load", field: "dailySP" as const, description: "Daily Story Points capacity (Dev H / 8 * Velocity). Aggregated by team." },
-        { title: "Product Budget", field: "dailyCHF" as const, description: "Daily Product Budget (CHF). Aggregated by team." },
-        { title: "Daily Dev CHF", field: "dailyDevCHF" as const, description: "Daily cost for Development. Aggregated by team." },
-        { title: "Daily Main CHF", field: "dailyMainCHF" as const, description: "Daily cost for Maintenance. Aggregated by team." },
-        { title: "Daily Manage CHF", field: "dailyManageCHF" as const, description: "Daily cost for Management. Aggregated by team." },
+        { title: "SP Load", field: "dailySP" as const },
+        { title: "Product Budget", field: "dailyCHF" as const },
+        { title: "Daily Dev CHF", field: "dailyDevCHF" as const },
+        { title: "Daily Main CHF", field: "dailyMainCHF" as const },
+        { title: "Daily Manage CHF", field: "dailyManageCHF" as const },
     ];
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <h1 className="text-2xl font-bold text-gray-800">PIB Team Capacity</h1>
+
+            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
+                <p>
+                    <strong>PIB Team Capacity</strong> provides a granular view of capacity and costs aggregated by <strong>Team</strong>.
+                    Each column represents a team, allowing for quick comparison of <strong>Store Points Load</strong> and <strong>Financial Budget</strong> distribution across different teams per sprint.
+                </p>
+            </div>
 
             <div className="flex items-center gap-4 bg-bg-surface p-4 rounded-xl border border-border shadow-sm">
                 <div className="flex flex-col gap-1">
@@ -220,7 +228,6 @@ const CapacityTeamDetails: React.FC = () => {
                         <div className="flex items-center justify-between p-4 border-b border-border bg-gray-50/50">
                             <h3 className="font-semibold text-text-main flex items-center">
                                 {table.title}
-                                <InfoTooltip text={table.description} />
                             </h3>
                             <button
                                 onClick={() => exportCSV(table.title, table.field)}

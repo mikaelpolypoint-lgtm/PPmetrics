@@ -4,7 +4,7 @@ import { CapacityService } from '../../services/CapacityService';
 import type { CapacityDeveloper, CapacityAvailability } from '../../types/capacity';
 import { Download } from 'lucide-react';
 import Papa from 'papaparse';
-import InfoTooltip from '../../components/InfoTooltip';
+// Removed unused InfoTooltip imports
 import DashboardTableBody from '../../components/capacity/DashboardTableBody';
 import type { SprintData, DevAttrs } from '../../components/capacity/DashboardTableBody';
 
@@ -205,16 +205,25 @@ const CapacityDetails: React.FC = () => {
     if (loading) return <div className="p-8 text-center text-text-muted">Loading Capacity Details...</div>;
 
     // Tables configuration
+    // Tables configuration
     const tables = [
-        { title: "Product Budget", field: "dailyCHF" as const, description: "Daily Product Budget. Formula: (DevH + Overhead) * Loaded Cost." },
-        { title: "Daily Dev CHF", field: "dailyDevCHF" as const, description: "Daily cost for Development. Formula: (DevH / Load) * Cost." },
-        { title: "Daily Main CHF", field: "dailyMainCHF" as const, description: "Daily cost for Maintenance. Formula: (MntH / Load) * Cost." },
-        { title: "Daily Manage CHF", field: "dailyManageCHF" as const, description: "Daily cost for Management. Formula: (MngH / Load) * Cost." },
+        { title: "Product Budget", field: "dailyCHF" as const },
+        { title: "Daily Dev CHF", field: "dailyDevCHF" as const },
+        { title: "Daily Main CHF", field: "dailyMainCHF" as const },
+        { title: "Daily Manage CHF", field: "dailyManageCHF" as const },
     ];
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <h1 className="text-2xl font-bold text-gray-800">PIB Capacity</h1>
+
+            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
+                <p>
+                    <strong>PIB Capacity</strong> focuses on the financial aspect of the capacity planning.
+                    It calculates the daily costs (Product Budget) based on developers' load, ratios, and internal costs.
+                    The tables breakdown the costs into <strong>Total Product Budget</strong>, <strong>Development</strong>, <strong>Maintenance</strong>, and <strong>Management</strong>.
+                </p>
+            </div>
 
             <div className="flex items-center gap-4 bg-bg-surface p-4 rounded-xl border border-border shadow-sm">
                 <div className="flex flex-col gap-1">
@@ -245,7 +254,6 @@ const CapacityDetails: React.FC = () => {
                         <div className="flex items-center justify-between p-4 border-b border-border bg-gray-50/50">
                             <h3 className="font-semibold text-text-main flex items-center">
                                 {table.title}
-                                <InfoTooltip text={table.description} />
                             </h3>
                             <button
                                 onClick={() => exportCSV(table.title, table.field)}
