@@ -1,14 +1,104 @@
 import React from 'react';
 import PageHeader from '../components/PageHeader';
-import { Database, Layers, Target, FileText, Users, Clock, ArrowDown } from 'lucide-react';
+import { Database, Layers, Target, FileText, Users, Clock, ArrowDown, Activity } from 'lucide-react';
+import MermaidDiagram from '../components/MermaidDiagram';
 
 const Tutorial: React.FC = () => {
+    const uMLChart = `
+    classDiagram
+      direction TB
+      
+      namespace Strategy {
+        class PI {
+          id: string
+          Start - End Date
+        }
+        class Topic {
+          key: string
+          Budget (CHF)
+        }
+        class Feature {
+          jiraId: string
+          Business Value
+          Planned Budget (CHF)
+        }
+      }
+
+      namespace Execution {
+        class Team {
+          name: string
+          Cost Rate (CHF/SP)
+          Capacity (Hours)
+        }
+        class Developer {
+          name: string
+          Role
+          Default Availability
+        }
+        class Availability {
+          Days Off / Holidays
+          Active %
+        }
+        class Story {
+          jiraKey: string
+          Story Points (SP)
+          Status
+        }
+        class EverhourEntry {
+          Hours
+        }
+      }
+
+      namespace Planning {
+        class CapacityCalc {
+           Calculates total team hours
+           based on Availability
+        }
+      }
+
+      %% Relationships
+      PI "1" *-- "*" Topic : contains
+      Topic "1" *-- "*" Feature : contains
+      Feature "1" *-- "*" Story : is_parent_of
+      
+      Team "1" o-- "*" Developer : has_members
+      Developer "1" *-- "*" Availability : defines_presence_in_PI
+      
+      Team "1" --> "*" Story : assigned_to
+      EverhourEntry "*" --> "1" Story : tracks_costs_for
+
+      CapacityCalc ..> Developer : aggregates_hours_from
+      CapacityCalc ..> Team : determines_budget_for
+      
+      %% Page Mapping Notes
+      note for Topic "Managed in: Scope > Topics"
+      note for Feature "Managed in: Scope > Features"
+      note for Team "Managed in: Config > Teams"
+      note for Developer "Managed in: Config > Developers"
+      note for Availability "Managed in: Config > Availabilities"
+      note for CapacityCalc "Visualized in: Capacity > Dashboard\n& Capacity > PIB Capacity"
+      note for Story "Imported from Jira"
+      note for EverhourEntry "Imported from Everhour"
+    `;
+
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto">
+        <div className="space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto">
             <PageHeader
                 title="Tutorial: Understanding the Data Structure"
-                description="A guide to how data connects within PPMetrics."
+                description="A visual guide to how data connects within PPMetrics."
             />
+
+            {/* UML Diagram Section */}
+            <div className="card">
+                <h3 className="text-lg font-bold text-brand-primary mb-4 flex items-center gap-2">
+                    <Activity size={20} /> Data Model & Page Connections
+                </h3>
+                <p className="text-text-muted mb-6">
+                    This diagram visualizes the relationships between the core entities (Topics, Features, Stories)
+                    and how they connect to Teams and Time Tracking.
+                </p>
+                <MermaidDiagram chart={uMLChart} />
+            </div>
 
             {/* Introduction */}
             <div className="card">

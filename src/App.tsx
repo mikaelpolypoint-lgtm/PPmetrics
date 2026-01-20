@@ -24,6 +24,10 @@ import CapacityDetails from './pages/capacity/CapacityDetails';
 import CapacityTeamDetails from './pages/capacity/CapacityTeamDetails';
 import CapacityChanges from './pages/capacity/CapacityChanges';
 import Tutorial from './pages/Tutorial';
+import MasterData from './pages/MasterData';
+import CapacityPlanning from './pages/CapacityPlanning';
+import SprintMetricsGroup from './pages/SprintMetricsGroup';
+import PIScope from './pages/PIScope';
 
 
 
@@ -73,6 +77,13 @@ const AppRoutes: React.FC = () => {
             <Route path="capacity-details" element={<CapacityDetails />} />
             <Route path="capacity-team-details" element={<CapacityTeamDetails />} />
             <Route path="capacity-changes" element={<CapacityChanges />} />
+
+
+            <Route path="master-data" element={<MasterData />} />
+
+            <Route path="capacity-planning" element={<CapacityPlanning />} />
+            <Route path="sprint-metrics-overview" element={<SprintMetricsGroup />} />
+            <Route path="pi-scope" element={<PIScope />} />
 
             <Route path="tutorial" element={<Tutorial />} />
 
