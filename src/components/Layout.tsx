@@ -3,8 +3,8 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { PIS } from '../types';
 import {
-    LayoutDashboard, Users, BarChart3, Database, Clock, Layers, FileText,
-    Activity, PieChart, Table, ChevronDown, ChevronRight, Settings, Calendar as CalendarIcon,
+    LayoutDashboard, Users, Database, Clock, Layers, FileText,
+    Activity, PieChart, ChevronDown, ChevronRight, Settings, Calendar as CalendarIcon,
     Target
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -41,7 +41,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     // Auto-expand if current route is a child
     useEffect(() => {
-        const path = location.pathname;
 
         // Define mapping of parents to their children keywords
         const mappings = [
@@ -136,6 +135,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     ];
 
     const tutorialItem: NavItemProps = { path: `/${currentPI}/tutorial`, label: 'Tutorial', icon: FileText };
+    const storageItem: NavItemProps = { path: `/${currentPI}/data-storage`, label: 'Data Storage', icon: Database };
 
 
     const NavItemRenderer: React.FC<{ item: NavItemProps, level?: number }> = ({ item, level = 0 }) => {
@@ -223,6 +223,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <div className="my-2 border-t border-gray-200" />
 
                     {/* Help */}
+                    <NavItemRenderer item={storageItem} />
                     <NavItemRenderer item={tutorialItem} />
 
                 </nav>

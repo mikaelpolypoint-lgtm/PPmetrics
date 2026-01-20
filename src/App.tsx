@@ -28,6 +28,7 @@ import MasterData from './pages/MasterData';
 import CapacityPlanning from './pages/CapacityPlanning';
 import SprintMetricsGroup from './pages/SprintMetricsGroup';
 import PIScope from './pages/PIScope';
+import DataStorage from './pages/DataStorage';
 
 
 
@@ -85,6 +86,7 @@ const AppRoutes: React.FC = () => {
             <Route path="sprint-metrics-overview" element={<SprintMetricsGroup />} />
             <Route path="pi-scope" element={<PIScope />} />
 
+            <Route path="data-storage" element={<DataStorage />} />
             <Route path="tutorial" element={<Tutorial />} />
 
             <Route path="*" element={<Navigate to="dashboard" replace />} />
