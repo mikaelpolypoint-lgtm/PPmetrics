@@ -117,6 +117,7 @@ const CapacityDashboard: React.FC = () => {
         const devH = (dailyHours * (load / 100) * (developRatio / 100));
         const maintainH = (dailyHours * (load / 100) * (maintainRatio / 100));
         const manageH = (dailyHours * (load / 100) * (manageRatio / 100));
+        const totalH = devH + maintainH + manageH;
         const dailySP = (devH / 8) * velocity;
 
         // Calculate Product Budget (formerly Daily CHF)
@@ -133,15 +134,17 @@ const CapacityDashboard: React.FC = () => {
 
             if (load > 0) {
                 const loadFactor = load / 100;
-                const rawCost = Number(dev.internalCost) || 0;
+                const costWithOverhead = (Number(dev.internalCost) || 0) * 1.33;
 
-                dailyDevCHF = (devH / loadFactor) * rawCost;
-                dailyMainCHF = (maintainH / loadFactor) * rawCost;
-                dailyManageCHF = (manageH / loadFactor) * rawCost;
+                dailyDevCHF = (devH / loadFactor) * costWithOverhead;
+                dailyMainCHF = (maintainH / loadFactor) * costWithOverhead;
+                dailyManageCHF = (manageH / loadFactor) * costWithOverhead;
             }
         }
 
-        return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF };
+        const dailyTotalCHF = dailyDevCHF + dailyMainCHF + dailyManageCHF;
+
+        return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF, dailyTotalCHF, totalH };
     };
 
     const exportCSV = (title: string, field: keyof DevAttrs) => {
@@ -160,7 +163,21 @@ const CapacityDashboard: React.FC = () => {
             filteredDevs.forEach(dev => {
                 const capacityDays = getSprintCapacity(sprint.name, dev.key);
                 const attrs = getDevAttrs(dev);
-                const val = capacityDays * attrs[field];
+
+                let val = 0;
+                if (field === 'absenceH') {
+                    const sprintData = sprints.get(sprint.name);
+                    const totalSprintDays = sprintData ? sprintData.rows.length : 0;
+                    if (totalSprintDays > 0) {
+                        const workRatio = (Number(dev.workRatio) || 0) / 100;
+                        const expectedDays = totalSprintDays * workRatio;
+                        const deltaDays = expectedDays - capacityDays;
+                        val = deltaDays * (attrs.totalH || 0);
+                    }
+                } else {
+                    const attrVal = attrs[field] as number | undefined;
+                    val = capacityDays * (attrVal ?? 0);
+                }
 
                 const devTeamInSprint = dev.sprintTeams?.[sprint.name] || dev.team;
                 const isMember = filterTeam === 'All' || devTeamInSprint === filterTeam;
@@ -207,9 +224,28 @@ const CapacityDashboard: React.FC = () => {
 
     if (loading) return <div className="p-8 text-center text-text-muted">Loading Capacity Dashboard...</div>;
 
+    // Absence logic
+    const getSprintDuration = (sprintName: string) => {
+        const sprintData = sprints.get(sprintName);
+        return sprintData ? sprintData.rows.length : 0;
+    };
+
+    const calculateAbsenceH = (sprintName: string, dev: CapacityDeveloper, capacityDays: number, attrs: DevAttrs) => {
+        const totalSprintDays = getSprintDuration(sprintName);
+        if (totalSprintDays === 0) return 0;
+
+        const workRatio = (Number(dev.workRatio) || 0) / 100;
+        const expectedDays = totalSprintDays * workRatio;
+        const deltaDays = expectedDays - capacityDays;
+
+        return deltaDays * (attrs.totalH || 0);
+    };
+
     // Tables configuration
     const tables = [
         { title: "SP Load", field: "dailySP" as const },
+        { title: "Total h", field: "totalH" as const },
+        { title: "Absence h", field: "absenceH" as const, calculator: calculateAbsenceH },
         { title: "Dev h", field: "devH" as const },
         { title: "Maintain h", field: "maintainH" as const },
         { title: "Manage h", field: "manageH" as const }
@@ -282,6 +318,7 @@ const CapacityDashboard: React.FC = () => {
                                         filterTeam={filterTeam}
                                         getSprintCapacity={getSprintCapacity}
                                         getDevAttrs={getDevAttrs}
+                                        customCalculator={'calculator' in table ? table.calculator : undefined}
                                     />
                                 </tbody>
                             </table>

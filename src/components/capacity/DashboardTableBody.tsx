@@ -15,6 +15,10 @@ interface DevAttrs {
     dailyDevCHF: number;
     dailyMainCHF: number;
     dailyManageCHF: number;
+    dailyTotalCHF: number;
+    absenceCHF?: number; // Calculated, not per day
+    totalH?: number; // Total Available Hours
+    absenceH?: number; // Absence Hours
 }
 
 const DashboardTableBody: React.FC<{
@@ -24,11 +28,15 @@ const DashboardTableBody: React.FC<{
     filterTeam: string;
     getSprintCapacity: (s: string, k: string) => number;
     getDevAttrs: (d: CapacityDeveloper) => DevAttrs;
-}> = ({ sprints, developers, field, filterTeam, getSprintCapacity, getDevAttrs }) => {
+    customCalculator?: (sprintName: string, dev: CapacityDeveloper, capacityDays: number, attrs: DevAttrs) => number;
+}> = ({ sprints, developers, field, filterTeam, getSprintCapacity, getDevAttrs, customCalculator }) => {
     const format = (n: number) => {
         if (field === 'dailySP') return n.toFixed(1);
-        if (['dailyCHF', 'dailyDevCHF', 'dailyMainCHF', 'dailyManageCHF'].includes(field)) {
+        if (['dailyCHF', 'dailyDevCHF', 'dailyMainCHF', 'dailyManageCHF', 'dailyTotalCHF', 'absenceCHF'].includes(field as string)) {
             return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        }
+        if (['totalH', 'absenceH', 'devH', 'maintainH', 'manageH'].includes(field as string)) {
+            return n.toFixed(1);
         }
         return Math.round(n).toString();
     };
@@ -48,7 +56,15 @@ const DashboardTableBody: React.FC<{
         const cells = developers.map(dev => {
             const capacityDays = getSprintCapacity(sprint.name, dev.key);
             const attrs = getDevAttrs(dev);
-            const val = capacityDays * attrs[field];
+
+            let val = 0;
+            if (customCalculator) {
+                val = customCalculator(sprint.name, dev, capacityDays, attrs);
+            } else {
+                // Determine if we need to access a property that might be optional
+                const fieldValue = attrs[field];
+                val = capacityDays * (fieldValue ?? 0);
+            }
 
             const devTeamInSprint = dev.sprintTeams?.[sprint.name] || dev.team;
             const isMember = filterTeam === 'All' || devTeamInSprint === filterTeam;

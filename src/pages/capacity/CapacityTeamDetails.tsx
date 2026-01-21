@@ -20,6 +20,8 @@ interface DevAttrs {
     dailyDevCHF: number;
     dailyMainCHF: number;
     dailyManageCHF: number;
+    dailyTotalCHF: number;
+    absenceCHF?: number;
 }
 
 const CapacityTeamDetails: React.FC = () => {
@@ -128,19 +130,21 @@ const CapacityTeamDetails: React.FC = () => {
             dailyCHF = (devH + (manageH * devH / productiveH)) * totalCost;
 
             const loadFactor = load / 100;
-            const rawCost = Number(dev.internalCost) || 0;
+            const costWithOverhead = (Number(dev.internalCost) || 0) * 1.33;
 
-            dailyDevCHF = (devH / loadFactor) * rawCost;
-            dailyMainCHF = (maintainH / loadFactor) * rawCost;
-            dailyManageCHF = (manageH / loadFactor) * rawCost;
+            dailyDevCHF = (devH / loadFactor) * costWithOverhead;
+            dailyMainCHF = (maintainH / loadFactor) * costWithOverhead;
+            dailyManageCHF = (manageH / loadFactor) * costWithOverhead;
         }
 
-        return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF };
+        const dailyTotalCHF = dailyDevCHF + dailyMainCHF + dailyManageCHF;
+
+        return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF, dailyTotalCHF };
     };
 
     const format = (n: number, field: keyof DevAttrs) => {
         if (field === 'dailySP') return n.toFixed(1);
-        if (['dailyCHF', 'dailyDevCHF', 'dailyMainCHF', 'dailyManageCHF'].includes(field)) {
+        if (['dailyCHF', 'dailyDevCHF', 'dailyMainCHF', 'dailyManageCHF', 'dailyTotalCHF'].includes(field)) {
             return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
         }
         return Math.round(n).toString();
@@ -163,7 +167,23 @@ const CapacityTeamDetails: React.FC = () => {
                     if (devTeamInSprint === team && !dev.specialCase) {
                         const capacityDays = getSprintCapacity(sprint.name, dev.key);
                         const attrs = getDevAttrs(dev);
-                        teamTotal += capacityDays * attrs[field];
+
+                        let val = 0;
+                        if (field === 'absenceCHF') {
+                            const sprintData = sprints.get(sprint.name);
+                            const totalSprintDays = sprintData ? sprintData.rows.length : 0;
+                            if (totalSprintDays > 0) {
+                                const workRatio = (Number(dev.workRatio) || 0) / 100;
+                                const expectedDays = totalSprintDays * workRatio;
+                                const deltaDays = expectedDays - capacityDays;
+                                val = deltaDays * attrs.dailyTotalCHF;
+                            }
+                        } else {
+                            const attrVal = attrs[field] as number | undefined;
+                            val = capacityDays * (attrVal ?? 0);
+                        }
+
+                        teamTotal += val;
                     }
                 });
                 row[team] = format(teamTotal, field);
@@ -190,9 +210,16 @@ const CapacityTeamDetails: React.FC = () => {
     if (loading) return <div className="p-8 text-center text-text-muted">Loading Team Capacity...</div>;
 
     // Tables configuration
+    const getSprintDuration = (sprintName: string) => {
+        const sprintData = sprints.get(sprintName);
+        return sprintData ? sprintData.rows.length : 0;
+    };
+
     const tables = [
         { title: "SP Load", field: "dailySP" as const },
         { title: "Product Budget", field: "dailyCHF" as const },
+        { title: "Total CHF", field: "dailyTotalCHF" as const },
+        { title: "Absence CHF", field: "absenceCHF" as const },
         { title: "Daily Dev CHF", field: "dailyDevCHF" as const },
         { title: "Daily Main CHF", field: "dailyMainCHF" as const },
         { title: "Daily Manage CHF", field: "dailyManageCHF" as const },
@@ -261,7 +288,17 @@ const CapacityTeamDetails: React.FC = () => {
                                                 if (devTeamInSprint === team && !dev.specialCase) {
                                                     const capacityDays = getSprintCapacity(sprint.name, dev.key);
                                                     const attrs = getDevAttrs(dev);
-                                                    teamTotal += capacityDays * attrs[table.field];
+
+                                                    if (table.field === 'absenceCHF') {
+                                                        const totalSprintDays = getSprintDuration(sprint.name);
+                                                        const workRatio = (Number(dev.workRatio) || 0) / 100;
+                                                        const expectedDays = totalSprintDays * workRatio;
+                                                        const deltaDays = expectedDays - capacityDays;
+                                                        teamTotal += deltaDays * attrs.dailyTotalCHF;
+                                                    } else {
+                                                        const val = attrs[table.field] ?? 0;
+                                                        teamTotal += capacityDays * val;
+                                                    }
                                                 }
                                             });
                                             rowTeamTotals[team] = teamTotal;
@@ -299,7 +336,18 @@ const CapacityTeamDetails: React.FC = () => {
                                                 if (teams.includes(devTeamInSprint || '')) {
                                                     const capacityDays = getSprintCapacity(sprint.name, dev.key);
                                                     const attrs = getDevAttrs(dev);
-                                                    const val = capacityDays * attrs[table.field];
+
+                                                    let val = 0;
+                                                    if (table.field === 'absenceCHF') {
+                                                        const totalSprintDays = getSprintDuration(sprint.name);
+                                                        const workRatio = (Number(dev.workRatio) || 0) / 100;
+                                                        const expectedDays = totalSprintDays * workRatio;
+                                                        const deltaDays = expectedDays - capacityDays;
+                                                        val = deltaDays * attrs.dailyTotalCHF;
+                                                    } else {
+                                                        const fieldVal = attrs[table.field] ?? 0;
+                                                        val = capacityDays * fieldVal;
+                                                    }
 
                                                     const teamKey = devTeamInSprint!;
                                                     totalMap[teamKey] += val;

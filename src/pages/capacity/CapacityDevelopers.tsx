@@ -240,11 +240,11 @@ const CapacityDevelopers: React.FC = () => {
 
             // Formula: hours / Load * Cost
             const loadFactor = load / 100;
-            const rawCost = Number(dev.internalCost) || 0;
+            const costWithOverhead = (Number(dev.internalCost) || 0) * 1.33;
 
-            dailyDevCHF = (devH / loadFactor) * rawCost;
-            dailyMainCHF = (maintainH / loadFactor) * rawCost;
-            dailyManageCHF = (manageH / loadFactor) * rawCost;
+            dailyDevCHF = (devH / loadFactor) * costWithOverhead;
+            dailyMainCHF = (maintainH / loadFactor) * costWithOverhead;
+            dailyManageCHF = (manageH / loadFactor) * costWithOverhead;
         }
 
         return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF };

@@ -131,14 +131,16 @@ const CapacityDetails: React.FC = () => {
             // New calculations requested
             // Formula: hours / Load * Cost
             const loadFactor = load / 100;
-            const rawCost = Number(dev.internalCost) || 0;
+            const costWithOverhead = (Number(dev.internalCost) || 0) * 1.33;
 
-            dailyDevCHF = (devH / loadFactor) * rawCost;
-            dailyMainCHF = (maintainH / loadFactor) * rawCost;
-            dailyManageCHF = (manageH / loadFactor) * rawCost;
+            dailyDevCHF = (devH / loadFactor) * costWithOverhead;
+            dailyMainCHF = (maintainH / loadFactor) * costWithOverhead;
+            dailyManageCHF = (manageH / loadFactor) * costWithOverhead;
         }
 
-        return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF };
+        const dailyTotalCHF = dailyDevCHF + dailyMainCHF + dailyManageCHF;
+
+        return { devH, maintainH, manageH, dailySP, dailyCHF, dailyDevCHF, dailyMainCHF, dailyManageCHF, dailyTotalCHF };
     };
 
     const exportCSV = (title: string, field: keyof DevAttrs) => {
@@ -157,7 +159,22 @@ const CapacityDetails: React.FC = () => {
             filteredDevs.forEach(dev => {
                 const capacityDays = getSprintCapacity(sprint.name, dev.key);
                 const attrs = getDevAttrs(dev);
-                const val = capacityDays * attrs[field];
+
+                let val = 0;
+                if (field === 'absenceCHF') {
+                    const sprintData = sprints.get(sprint.name);
+                    const totalSprintDays = sprintData ? sprintData.rows.length : 0;
+                    if (totalSprintDays > 0) {
+                        const workRatio = (Number(dev.workRatio) || 0) / 100;
+                        const expectedDays = totalSprintDays * workRatio;
+                        const deltaDays = expectedDays - capacityDays;
+                        val = deltaDays * attrs.dailyTotalCHF;
+                    }
+                } else {
+                    // Force cast or check
+                    const attrVal = attrs[field] as number | undefined;
+                    val = capacityDays * (attrVal ?? 0);
+                }
 
                 const devTeamInSprint = dev.sprintTeams?.[sprint.name] || dev.team;
                 const isMember = filterTeam === 'All' || devTeamInSprint === filterTeam;
@@ -205,9 +222,36 @@ const CapacityDetails: React.FC = () => {
     if (loading) return <div className="p-8 text-center text-text-muted">Loading Capacity Details...</div>;
 
     // Tables configuration
+    const getSprintDuration = (sprintName: string) => {
+        const sprintData = sprints.get(sprintName);
+        return sprintData ? sprintData.rows.length : 0;
+    };
+
+    const calculateAbsenceCHF = (sprintName: string, dev: CapacityDeveloper, capacityDays: number, attrs: DevAttrs) => {
+        const totalSprintDays = getSprintDuration(sprintName);
+        if (totalSprintDays === 0) return 0;
+
+        const workRatio = (Number(dev.workRatio) || 0) / 100;
+
+        // Theoretical Full Capacity (days) adjusted by Work %
+        // "If the person would be available all days... multiplied with Work %"
+        const expectedDays = totalSprintDays * workRatio;
+
+        // "Remove the 'Total Cost' (based on actual availabilities)" 
+        // -> This means subtract the actual days from the expected days, then multiply by daily cost.
+        // OR (ExpectedDays * Rate) - (ActualDays * Rate)
+
+        const deltaDays = expectedDays - capacityDays;
+
+        // Absence CHF
+        return deltaDays * attrs.dailyTotalCHF;
+    };
+
     // Tables configuration
     const tables = [
         { title: "Product Budget", field: "dailyCHF" as const },
+        { title: "Total CHF", field: "dailyTotalCHF" as const },
+        { title: "Absence CHF", field: "absenceCHF" as const, calculator: calculateAbsenceCHF },
         { title: "Daily Dev CHF", field: "dailyDevCHF" as const },
         { title: "Daily Main CHF", field: "dailyMainCHF" as const },
         { title: "Daily Manage CHF", field: "dailyManageCHF" as const },
@@ -282,6 +326,7 @@ const CapacityDetails: React.FC = () => {
                                         filterTeam={filterTeam}
                                         getSprintCapacity={getSprintCapacity}
                                         getDevAttrs={getDevAttrs}
+                                        customCalculator={'calculator' in table ? table.calculator : undefined}
                                     />
                                 </tbody>
                             </table>
