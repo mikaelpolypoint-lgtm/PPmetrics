@@ -1,6 +1,7 @@
 import { db } from '../lib/firebase';
 import { collection, getDocs, setDoc, doc, query, where, deleteDoc, getDoc } from 'firebase/firestore';
 import type { CapacityDeveloper, CapacityAvailability, CapacityImprovement, PIConfiguration, EverhourTeamData } from '../types/capacity';
+import type { Story } from '../types';
 
 export const CapacityService = {
     // --- Developers ---
@@ -247,6 +248,101 @@ export const CapacityService = {
         return teamHours;
     },
 
+    async getSprintCapacityMetrics(pi: string): Promise<Record<string, Record<string, { dev: number, maintain: number, manage: number, absence: number, sp: number }>>> {
+        const [devs, avails] = await Promise.all([
+            this.getDevelopers(pi),
+            this.getAvailabilities(pi)
+        ]);
+
+        // Structure: TeamName -> SprintName -> Metrics
+        const metrics: Record<string, Record<string, any>> = {};
+        const initMetrics = () => ({ dev: 0, maintain: 0, manage: 0, absence: 0, sp: 0 });
+
+        const sprintsMap = new Map<string, CapacityAvailability[]>();
+        avails.forEach(row => {
+            if (!sprintsMap.has(row.sprint)) sprintsMap.set(row.sprint, []);
+            sprintsMap.get(row.sprint)!.push(row);
+        });
+
+        for (const [sprintName, rows] of sprintsMap.entries()) {
+            // Include all sprints found in availability (including IP if present in rows, though usually filtered in UI)
+            const sprintTotalDays = rows.length;
+
+            devs.forEach(dev => {
+                if (dev.specialCase) return;
+
+                const team = dev.sprintTeams?.[sprintName] || dev.team;
+                if (!team) return;
+
+                if (!metrics[team]) metrics[team] = {};
+                if (!metrics[team][sprintName]) metrics[team][sprintName] = initMetrics();
+
+                const m = metrics[team][sprintName];
+
+                // Also accumulate for H1 if Hydrogen 1
+                const mH1 = (team === 'Hydrogen 1') ? (
+                    (!metrics['H1'] ? (metrics['H1'] = {}) : metrics['H1']),
+                    (!metrics['H1'][sprintName] ? (metrics['H1'][sprintName] = initMetrics()) : metrics['H1'][sprintName])
+                ) : null;
+
+                const dailyHours = Number(dev.dailyHours) || 8;
+                const workRatio = Number(dev.workRatio) || 0;
+                const load = Number(dev.load) || 90;
+                const developRatio = Number(dev.developRatio) || 0;
+                const maintainRatio = Number(dev.maintainRatio) || 0;
+                const manageRatio = Number(dev.manageRatio) || 0;
+                const velocity = Number(dev.velocity) || 0;
+
+                const dailyDevH = (dailyHours * (load / 100) * (developRatio / 100));
+                const dailyMaintainH = (dailyHours * (load / 100) * (maintainRatio / 100));
+                const dailyManageH = (dailyHours * (load / 100) * (manageRatio / 100));
+                const dailySP = (dailyDevH / 8) * velocity;
+                const totalH = dailyDevH + dailyMaintainH + dailyManageH;
+
+                let availDays = 0;
+                rows.forEach(r => {
+                    const val = r[dev.key];
+                    const num = (val === undefined || val === null || val === '') ? 1 : Number(val);
+                    if (!isNaN(num)) availDays += num;
+                });
+
+                // Absence Logic matching CapacityDashboard
+                const expectedDays = sprintTotalDays * (workRatio / 100);
+                const deltaDays = expectedDays - availDays;
+                const absenceHours = deltaDays * totalH;
+
+                // Add to current team
+                m.dev += availDays * dailyDevH;
+                m.maintain += availDays * dailyMaintainH;
+                m.manage += availDays * dailyManageH;
+                m.sp += availDays * dailySP;
+                m.absence += absenceHours;
+
+                // Add to H1 alias if applicable
+                if (mH1) {
+                    mH1.dev += availDays * dailyDevH;
+                    mH1.maintain += availDays * dailyMaintainH;
+                    mH1.manage += availDays * dailyManageH;
+                    mH1.sp += availDays * dailySP;
+                    mH1.absence += absenceHours;
+                }
+            });
+        }
+
+        // Round all values to integers before returning
+        Object.values(metrics).forEach(teamMetrics => {
+            Object.values(teamMetrics).forEach(m => {
+                m.dev = Math.round(m.dev);
+                m.maintain = Math.round(m.maintain);
+                m.manage = Math.round(m.manage);
+                m.sp = Math.round(m.sp);
+                m.absence = Math.round(m.absence);
+            });
+        });
+
+        return metrics;
+    },
+
     // --- Everhour Actuals ---
     async getEverhourData(pi: string): Promise<EverhourTeamData[]> {
         const q = query(collection(db, "everhour_capacities"), where("pi", "==", pi));
@@ -256,5 +352,93 @@ export const CapacityService = {
 
     async saveEverhourData(data: EverhourTeamData): Promise<void> {
         await setDoc(doc(db, "everhour_capacities", `${data.pi}_${data.team}`), data);
+    },
+
+    async getSprintActualMetrics(pi: string, stories: Story[]): Promise<Record<string, Record<string, { dev: number, maintain: number, manage: number, sp: number }>>> {
+        const [everhourData, avails] = await Promise.all([
+            this.getEverhourData(pi),
+            this.getAvailabilities(pi)
+        ]);
+
+        // Structure: Team -> SprintName -> Metrics
+        const metrics: Record<string, Record<string, { dev: number, maintain: number, manage: number, sp: number }>> = {};
+        const initMetrics = () => ({ dev: 0, maintain: 0, manage: 0, sp: 0 });
+
+        // 1. Process Everhour (Hours)
+        everhourData.forEach(teamData => {
+            const team = teamData.team;
+            if (!metrics[team]) metrics[team] = {};
+
+            if (teamData.rows) {
+                teamData.rows.forEach(row => {
+                    Object.entries(row.sprints).forEach(([sprintKey, hours]) => {
+                        // sprintKey is "S1", "S2"... "S6"
+                        // Map "S6" to "IP" for consistence if needed, or stick to suffix
+                        // The SprintMetrics UI expects full name "26.1-S1" to parse index
+                        // OR we can produce "26.1-S1" here.
+
+                        let suffix = sprintKey;
+                        if (sprintKey === 'S6') suffix = 'IP';
+
+                        const sprintName = `${pi}-${suffix}`;
+
+                        if (!metrics[team][sprintName]) metrics[team][sprintName] = initMetrics();
+
+                        if (row.category === 'Dev') metrics[team][sprintName].dev += hours;
+                        if (row.category === 'Maintain') metrics[team][sprintName].maintain += hours;
+                        if (row.category === 'Manage') metrics[team][sprintName].manage += hours;
+                    });
+                });
+            }
+        });
+
+        // 2. Process Jira (SP)
+        const dateToSprint = new Map<string, string>();
+        avails.forEach(row => {
+            dateToSprint.set(row.date, row.sprint);
+        });
+
+        const normalizeStatus = (status: string) => {
+            const s = status.toLowerCase();
+            if (s === 'done' || s === 'closed') return 'Done';
+            return s;
+        };
+
+        stories.forEach(story => {
+            if (story.pi !== pi) return;
+            if (normalizeStatus(story.status) !== 'Done') return;
+
+            if (!story.since) return;
+
+            // Parse since "dd.mm.yy" -> "YYYY-MM-DD"
+            // Format usually "18.09.25"
+            const parts = story.since.split('.');
+            if (parts.length !== 3) return;
+            const isoDate = `20${parts[2]}-${parts[1]}-${parts[0]}`;
+
+            const sprint = dateToSprint.get(isoDate);
+            if (!sprint) return;
+
+            // Check if mappings are correct for "Hydrogen 1" -> "H1"
+            let team = story.team;
+            if (team === 'Hydrogen 1') team = 'H1';
+
+            if (!metrics[team]) metrics[team] = {};
+            if (!metrics[team][sprint]) metrics[team][sprint] = initMetrics();
+
+            metrics[team][sprint].sp += (story.sp || 0);
+        });
+
+        // Round all actuals to nearest integer
+        Object.values(metrics).forEach(teamMetrics => {
+            Object.values(teamMetrics).forEach(m => {
+                m.dev = Math.round(m.dev);
+                m.maintain = Math.round(m.maintain);
+                m.manage = Math.round(m.manage);
+                m.sp = Math.round(m.sp);
+            });
+        });
+
+        return metrics;
     }
 };

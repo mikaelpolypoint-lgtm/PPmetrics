@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import PageHeader from '../components/PageHeader';
-import { Download } from 'lucide-react';
+import { Download, RefreshCw } from 'lucide-react';
+import { CapacityService } from '../services/CapacityService';
 
 const SPRINTS = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Sprint 4', 'Sprint 5', 'Sprint 6'];
 
@@ -61,6 +62,133 @@ const SprintMetrics: React.FC = () => {
             pi: currentPI,
             values: newMetrics
         });
+    };
+
+    const handleAutomatePlan = async () => {
+        if (!confirm("This will overwrite existing 'Plan' values for all teams based on the Capacity Dashboard. Continue?")) return;
+
+        try {
+            const capacityMetrics = await CapacityService.getSprintCapacityMetrics(currentPI);
+
+            // Loop through all teams to update their metrics
+            for (const team of teams) {
+                const teamName = team.name;
+                const teamMetrics = capacityMetrics[teamName] || {};
+
+                // Get existing data to preserve 'actual' values
+                const docId = `${team.id}_${currentPI}`;
+                const existingDoc = sprintMetrics.find(d => d.id === docId);
+                const currentValues = existingDoc ? { ...existingDoc.values } : {};
+
+                let hasUpdates = false;
+
+                Object.entries(teamMetrics).forEach(([sprintName, m]) => {
+                    // Match sprintName (e.g. "26.1-S1") to index (0)
+                    // Match sprintName (e.g. "26.1-S1") to index (0)
+                    const match = sprintName.match(/-S(\d+)$/);
+                    let sprintIdx = -1;
+
+                    if (match) {
+                        sprintIdx = parseInt(match[1], 10) - 1; // S1 -> 0
+                    } else if (sprintName.endsWith('-IP')) {
+                        sprintIdx = 5; // IP Sprint is Sprint 6
+                    }
+
+                    if (sprintIdx >= 0 && sprintIdx < SPRINTS.length) {
+                        const set = (metric: string, val: number) => {
+                            // Only overwrite if different? Or always overwrite.
+                            // Should we check if val changed to avoid minimal commits? 
+                            // For now, simple overwrite of plan values.
+                            currentValues[`${sprintIdx}-${metric}-plan`] = val;
+                        };
+
+                        set('dev', m.dev);
+                        set('maintain', m.maintain);
+                        set('manage', m.manage);
+                        set('absence', m.absence);
+                        set('sp', m.sp);
+                        hasUpdates = true;
+                    }
+                });
+
+                // Save if we found metrics for this team
+                if (hasUpdates) {
+                    saveSprintMetrics({
+                        id: docId,
+                        teamId: team.id,
+                        pi: currentPI,
+                        values: currentValues
+                    });
+                }
+            }
+            alert("Plan metrics updated successfully from Capacity Dashboard.");
+
+        } catch (e) {
+            console.error(e);
+            alert("Failed to automate metrics.");
+        }
+    };
+
+    const handleAutomateActual = async () => {
+        if (!confirm("This will overwrite existing 'Actual' values (except Absence) for all teams. Continue?")) return;
+
+        try {
+            const actualMetrics = await CapacityService.getSprintActualMetrics(currentPI, stories);
+
+            // Loop through all teams to update their metrics
+            for (const team of teams) {
+                const teamName = team.name;
+                const teamMetrics = actualMetrics[teamName] || {};
+
+                // Get existing data
+                const docId = `${team.id}_${currentPI}`;
+                const existingDoc = sprintMetrics.find(d => d.id === docId);
+                const currentValues = existingDoc ? { ...existingDoc.values } : {};
+
+                let hasUpdates = false;
+
+                Object.entries(teamMetrics).forEach(([sprintName, m]) => {
+                    // Match sprintName (e.g. "26.1-S1") to index (0)
+                    const match = sprintName.match(/-S(\d+)$/);
+                    let sprintIdx = -1;
+
+                    if (match) {
+                        sprintIdx = parseInt(match[1], 10) - 1; // S1 -> 0
+                    } else if (sprintName.endsWith('-IP')) {
+                        sprintIdx = 5; // IP Sprint is Sprint 6
+                    }
+
+                    if (sprintIdx >= 0 && sprintIdx < SPRINTS.length) {
+                        const set = (metric: string, val: number) => {
+                            // Preserve absence actuals as requested "manually update"
+                            if (metric === 'absence') return;
+                            currentValues[`${sprintIdx}-${metric}-actual`] = val;
+                        };
+
+                        set('dev', m.dev);
+                        set('maintain', m.maintain);
+                        set('manage', m.manage);
+                        // set('absence', m.absence); // Do not automate absence actuals
+                        set('sp', m.sp);
+                        hasUpdates = true;
+                    }
+                });
+
+                if (hasUpdates) {
+                    saveSprintMetrics({
+                        id: docId,
+                        teamId: team.id,
+                        pi: currentPI,
+                        values: currentValues
+                    });
+                }
+            }
+            alert("Actual metrics updated successfully from Everhour and Jira.");
+
+        } catch (e) {
+            console.error(e);
+            alert("Failed to automate actual metrics.");
+        }
     };
 
     // Accessors
@@ -201,9 +329,17 @@ const SprintMetrics: React.FC = () => {
                 title="Sprint Metrics"
                 description="Track capacity, scope, and quality metrics per team across the PI."
                 actions={
-                    <button onClick={exportCSV} className="btn btn-secondary flex items-center gap-2">
-                        <Download size={18} /> Export CSV
-                    </button>
+                    <div className="flex gap-2">
+                        <button onClick={handleAutomatePlan} className="btn btn-primary flex items-center gap-2" title="Automate Plan from Capacity">
+                            <RefreshCw size={18} /> Automate Plan
+                        </button>
+                        <button onClick={handleAutomateActual} className="btn btn-primary flex items-center gap-2" title="Automate Actuals from Everhour & Jira">
+                            <RefreshCw size={18} /> Automate Actuals
+                        </button>
+                        <button onClick={exportCSV} className="btn btn-secondary flex items-center gap-2">
+                            <Download size={18} /> Export CSV
+                        </button>
+                    </div>
                 }
             />
 
