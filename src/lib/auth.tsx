@@ -7,6 +7,8 @@ import {
     GoogleAuthProvider,
     OAuthProvider,
     signOut,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
 } from "firebase/auth";
 
 type Role = "admin" | "agile" | "developer" | "viewer";
@@ -106,4 +108,12 @@ export const signInWithMicrosoft = async () => {
 
 export const signOutUser = async () => {
     await signOut(getAuth());
+};
+
+export const signInWithEmail = async (email: string, pass: string) => {
+    return await signInWithEmailAndPassword(getAuth(), email, pass);
+};
+
+export const signUpWithEmail = async (email: string, pass: string) => {
+    return await createUserWithEmailAndPassword(getAuth(), email, pass);
 };

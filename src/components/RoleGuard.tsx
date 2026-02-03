@@ -16,8 +16,8 @@ const RoleGuard: React.FC<RoleGuardProps> = ({ allowedRoles, children }) => {
     }
 
     if (!user) {
-        // Not logged in, redirect to login (or root which handles login)
-        return <Navigate to="/" state={{ from: location }} replace />;
+        // Not logged in, redirect to login
+        return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
     if (!allowedRoles.includes(user.role)) {

@@ -49,11 +49,14 @@ const PISync: React.FC = () => {
 import RoleGuard from './components/RoleGuard';
 import { Outlet } from 'react-router-dom';
 
+import Login from './pages/Login';
+
 const AppRoutes: React.FC = () => {
   const defaultPI = PIS[0];
 
   return (
     <Routes>
+      <Route path="/login" element={<Login />} />
       <Route path="/" element={<Navigate to={`/${defaultPI}/dashboard`} replace />} />
 
       <Route path="/:pi/*" element={
