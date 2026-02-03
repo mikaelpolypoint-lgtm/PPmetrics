@@ -9,7 +9,7 @@ import {
     signOut,
 } from "firebase/auth";
 
-type Role = "admin" | "dev" | "viewer";
+type Role = "admin" | "agile" | "developer" | "viewer";
 
 export interface AuthUser {
     uid: string;
@@ -38,6 +38,9 @@ export const useAuthFull = () => {
     return ctx;
 };
 
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "./firebase";
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
@@ -46,8 +49,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     useEffect(() => {
         const unsub = onAuthStateChanged(auth, async (fbUser) => {
             if (fbUser) {
-                const tokenResult = await fbUser.getIdTokenResult();
-                const role = (tokenResult.claims.role as Role) ?? "viewer";
+                // Fetch role from Firestore
+                let role: Role = "developer"; // Default role if not found
+
+                try {
+                    const userDocRef = doc(db, "users", fbUser.uid);
+                    const userDoc = await getDoc(userDocRef);
+
+                    if (userDoc.exists()) {
+                        const data = userDoc.data();
+                        if (data.role) {
+                            role = data.role as Role;
+                        }
+                    } else {
+                        // Optional: Create user doc if it doesn't exist? 
+                        // For now, we assume admin creates users or we default to developer/viewer
+                        // Let's default to a safe 'viewer' equivalent, which is 'developer' with limited access?
+                        // Actually, 'developer' has write access to availabilities. 
+                        // Maybe we need a 'viewer' role that sees nothing?
+                        // The user didn't specify 'viewer'. Let's stick to 'developer' as base strictly, 
+                        // or maybe 'agile' is safer for 'read everything'?
+                        // No, 'developer' is most restrictive (only 2 pages).
+                    }
+                } catch (e) {
+                    console.error("Error fetching user role:", e);
+                }
+
                 setUser({
                     uid: fbUser.uid,
                     email: fbUser.email,

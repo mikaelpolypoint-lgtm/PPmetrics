@@ -7,7 +7,12 @@ import Papa from 'papaparse';
 
 const TEAMS = ['Neon', 'H1', 'Zn2C', 'Tungsten', 'UI', 'TMGT', 'Admin'];
 
+import { useAuthFull } from '../../lib/auth';
+
 const CapacityDevelopers: React.FC = () => {
+    const { user } = useAuthFull();
+    const isReadOnly = user?.role === 'agile';
+
     const { currentPI } = useData();
     const [developers, setDevelopers] = useState<CapacityDeveloper[]>([]);
     const [loading, setLoading] = useState(true);
@@ -47,6 +52,7 @@ const CapacityDevelopers: React.FC = () => {
     };
 
     const handleInputChange = (key: string, field: keyof CapacityDeveloper, value: any) => {
+        if (isReadOnly) return;
         setDevelopers(prev => prev.map(d => {
             if (d.key === key) {
                 return { ...d, [field]: value };
@@ -57,6 +63,7 @@ const CapacityDevelopers: React.FC = () => {
     };
 
     const handleKeyChange = (oldKey: string, newKey: string) => {
+        if (isReadOnly) return;
         if (!newKey || newKey.length > 3) return;
         setDevelopers(prev => prev.map(d => {
             if (d.key === oldKey) return { ...d, key: newKey };
@@ -71,6 +78,7 @@ const CapacityDevelopers: React.FC = () => {
     };
 
     const addDeveloper = () => {
+        if (isReadOnly) return;
         const newDev: CapacityDeveloper = {
             team: 'Neon', key: '', name: '', stack: 'Fullstack',
             dailyHours: 8, workRatio: 100, internalCost: 100, load: 90,
@@ -81,6 +89,7 @@ const CapacityDevelopers: React.FC = () => {
     };
 
     const deleteDeveloper = async (key: string) => {
+        if (isReadOnly) return;
         if (!key) {
             setDevelopers(prev => prev.filter(d => d.key !== ''));
             return;
@@ -97,6 +106,7 @@ const CapacityDevelopers: React.FC = () => {
     };
 
     const openDeleteAllModal = () => {
+        if (isReadOnly) return;
         setIsDeleteModalOpen(true);
     };
 
@@ -307,19 +317,23 @@ const CapacityDevelopers: React.FC = () => {
                         <input type="file" ref={csvInputRef} onChange={importCSV} accept=".csv" className="hidden" />
                     </div>
 
-                    <button onClick={addDeveloper} className="btn-primary flex items-center gap-2 px-3 py-2 bg-brand-primary text-white rounded hover:bg-brand-primary/90">
-                        <Plus size={16} /> Add Developer
-                    </button>
+                    {!isReadOnly && (
+                        <button onClick={addDeveloper} className="btn-primary flex items-center gap-2 px-3 py-2 bg-brand-primary text-white rounded hover:bg-brand-primary/90">
+                            <Plus size={16} /> Add Developer
+                        </button>
+                    )}
 
-                    {modifiedKeys.size > 0 && (
+                    {!isReadOnly && modifiedKeys.size > 0 && (
                         <button onClick={saveChanges} className="btn-success flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                             <Save size={16} /> Save Changes
                         </button>
                     )}
 
-                    <button onClick={openDeleteAllModal} className="p-2 text-red-500 hover:bg-red-50 rounded border border-transparent hover:border-red-200" title="Delete All Developers">
-                        <Trash2 size={16} />
-                    </button>
+                    {!isReadOnly && (
+                        <button onClick={openDeleteAllModal} className="p-2 text-red-500 hover:bg-red-50 rounded border border-transparent hover:border-red-200" title="Delete All Developers">
+                            <Trash2 size={16} />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -358,12 +372,17 @@ const CapacityDevelopers: React.FC = () => {
                                 return (
                                     <tr key={dev.key || idx} className={`hover:bg-gray-50 ${isModified ? 'bg-yellow-50' : ''}`}>
                                         <td className="px-4 py-2 flex gap-1">
-                                            <button onClick={() => deleteDeveloper(dev.key)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
-                                            <button onClick={() => openSprintModal(dev)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Settings size={16} /></button>
+                                            {!isReadOnly && (
+                                                <>
+                                                    <button onClick={() => deleteDeveloper(dev.key)} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 size={16} /></button>
+                                                    <button onClick={() => openSprintModal(dev)} className="p-1 text-blue-500 hover:bg-blue-50 rounded"><Settings size={16} /></button>
+                                                </>
+                                            )}
                                         </td>
                                         <td className="px-4 py-2">
                                             <select
                                                 value={dev.team}
+                                                disabled={isReadOnly}
                                                 onChange={e => handleInputChange(dev.key, 'team', e.target.value)}
                                                 className="bg-transparent border-none focus:ring-1 p-1 w-24"
                                             >
@@ -374,6 +393,7 @@ const CapacityDevelopers: React.FC = () => {
                                             <input
                                                 value={dev.key}
                                                 maxLength={3}
+                                                disabled={isReadOnly}
                                                 onChange={e => handleKeyChange(dev.key, e.target.value)}
                                                 className="bg-transparent w-12 border border-gray-200 rounded px-1 py-0.5"
                                             />
@@ -381,22 +401,23 @@ const CapacityDevelopers: React.FC = () => {
                                         <td className="px-4 py-2">
                                             <input
                                                 value={dev.name || ''}
+                                                disabled={isReadOnly}
                                                 onChange={e => handleInputChange(dev.key, 'name', e.target.value)}
                                                 className="bg-transparent w-full border-b border-gray-200 focus:border-blue-500 outline-none"
                                                 placeholder="Name"
                                             />
                                         </td>
                                         <td className="px-4 py-2 text-center">
-                                            <input type="checkbox" checked={dev.specialCase || false} onChange={e => handleInputChange(dev.key, 'specialCase', e.target.checked)} />
+                                            <input type="checkbox" disabled={isReadOnly} checked={dev.specialCase || false} onChange={e => handleInputChange(dev.key, 'specialCase', e.target.checked)} />
                                         </td>
-                                        <td className="px-4 py-2"><input type="number" value={dev.dailyHours} onChange={e => handleInputChange(dev.key, 'dailyHours', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
-                                        <td className="px-4 py-2"><input type="number" value={dev.workRatio} onChange={e => handleInputChange(dev.key, 'workRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
-                                        <td className="px-4 py-2"><input type="number" value={dev.internalCost} onChange={e => handleInputChange(dev.key, 'internalCost', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
-                                        <td className="px-4 py-2"><input type="number" value={dev.load} onChange={e => handleInputChange(dev.key, 'load', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
-                                        <td className="px-4 py-2"><input type="number" value={dev.manageRatio} onChange={e => handleInputChange(dev.key, 'manageRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
-                                        <td className="px-4 py-2"><input type="number" value={dev.developRatio} onChange={e => handleInputChange(dev.key, 'developRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
-                                        <td className="px-4 py-2"><input type="number" value={dev.maintainRatio} onChange={e => handleInputChange(dev.key, 'maintainRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
-                                        <td className="px-4 py-2"><input type="number" value={dev.velocity} step="0.1" onChange={e => handleInputChange(dev.key, 'velocity', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
+                                        <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.dailyHours} onChange={e => handleInputChange(dev.key, 'dailyHours', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
+                                        <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.workRatio} onChange={e => handleInputChange(dev.key, 'workRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
+                                        <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.internalCost} onChange={e => handleInputChange(dev.key, 'internalCost', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
+                                        <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.load} onChange={e => handleInputChange(dev.key, 'load', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
+                                        <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.manageRatio} onChange={e => handleInputChange(dev.key, 'manageRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
+                                        <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.developRatio} onChange={e => handleInputChange(dev.key, 'developRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
+                                        <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.maintainRatio} onChange={e => handleInputChange(dev.key, 'maintainRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
+                                        <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.velocity} step="0.1" onChange={e => handleInputChange(dev.key, 'velocity', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
 
                                         <td className="px-4 py-2 text-gray-500">{calc.devH.toFixed(2)}</td>
                                         <td className="px-4 py-2 text-gray-500">{calc.maintainH.toFixed(2)}</td>

@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- Helper Functions ---
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Fetch the user's role from the 'users' collection
+    function getRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getRole() == 'admin';
+    }
+
+    // Agile includes Admin permissions for READ (implicit in logic usually) but for specific logic:
+    // "agile read access to everything plus the write access to availabilities page"
+    // So Agile can WRITE availabilities.
+    function isAgile() {
+       let role = getRole();
+       return isAuthenticated() && (role == 'admin' || role == 'agile');
+    }
+
+    // Developer includes Admin and Agile for Availabilities write access
+    function isDeveloper() {
+       let role = getRole();
+       return isAuthenticated() && (role == 'admin' || role == 'agile' || role == 'developer');
+    }
+
+    // --- Collection Rules ---
+
+    // Users: Users can read their own role. Only Admin can write/assign roles.
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Availabilities: Read by all, Writed by Admin, Agile, Developer
+    match /availabilities/{docId} {
+        allow read: if isAuthenticated();
+        allow write: if isDeveloper(); 
+    }
+
+    // Developers (Capacity Base Data): Read by all, Write by Admin
+    match /developers/{docId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+    }
+
+    // PI Configs: Read by all, Write by Admin
+    match /pi_configs/{docId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+    }
+    
+    // --- Core Data Collections ---
+    // Read: All Groups (Admin, Agile, Developer? No, Developer only sees Availabilities!)
+    // "developer has only access to: Availabilities page... Capacity Dashboard"
+    // Capacity Dashboard reads: Developers, Availabilities.
+    // DOES NOT READ: Teams, Topics, Features, Stories (usually).
+    // EXCEPT: CapacityDashboard might need Team names? 
+    // Teams are public read?
+    // "developer has only access to..." implies they shouldn't see sensitive financial data in Teams?
+    // The "Teams" collection has 'spValue', 'pibBudget', 'costOfDevH'. THESE ARE SENSITIVE.
+    
+    // Let's refine READ access for Teams.
+    // CapacityDashboard (Devs) needs: Developers (for names/teams), Availabilities.
+    // Does it load Teams? 
+    // CapacityDashboard.tsx: "const { teams, sprintNames... } = useMemo... developers.map(d => d.team)"
+    // It derives teams from Developer objects, not the 'teams' collection!
+    // So Developers do NOT need read access to 'teams' collection.
+    
+    // So:
+    match /teams/{docId} {
+      allow read: if isAgile(); // Admin or Agile
+      allow write: if isAdmin();
+    }
+    
+    match /topics/{docId} {
+      allow read: if isAgile();
+      allow write: if isAdmin();
+    }
+    
+    match /features/{docId} {
+      allow read: if isAgile();
+      allow write: if isAdmin();
+    }
+    
+    match /stories/{docId} {
+      allow read: if isAgile();
+      allow write: if isAdmin();
+    }
+    
+    match /sprintMetrics/{docId} {
+      allow read: if isAgile();
+      allow write: if isAdmin();
+    }
+    
+    match /everhourEntries/{docId} {
+      allow read: if isAgile();
+      allow write: if isAdmin();
+    }
+    
+    match /everhour_capacities/{docId} {
+      allow read: if isAgile();
+      allow write: if isAdmin();
+    }
+    
+    match /improvements/{docId} {
+      allow read: if isAuthenticated(); // Maybe harmless?
+      allow write: if isAdmin();
+    }
+  }
+}

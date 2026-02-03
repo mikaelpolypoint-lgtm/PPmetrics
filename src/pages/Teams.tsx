@@ -6,7 +6,12 @@ import { CapacityService } from '../services/CapacityService';
 import type { CapacityDeveloper, CapacityAvailability } from '../types/capacity';
 import { Edit2, Save, X, Trash2, Plus } from 'lucide-react';
 
+import { useAuthFull } from '../lib/auth';
+
 const Teams: React.FC = () => {
+    const { user } = useAuthFull();
+    const isReadOnly = user?.role === 'agile';
+
     const { teams, updateTeam, addTeam, deleteTeam, currentPI, stories } = useData();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<Team | null>(null);
@@ -17,6 +22,8 @@ const Teams: React.FC = () => {
         pibBudget: 0,
         costOfDevH: 0
     });
+
+    // ... (rest of state)
 
     // Capacity Data State
     const [totalDevHours, setTotalDevHours] = useState<Record<string, number>>({});
@@ -99,11 +106,13 @@ const Teams: React.FC = () => {
     }, [currentPI, teams]); // Re-run if PI or definitions change
 
     const handleEdit = (team: Team) => {
+        if (isReadOnly) return;
         setEditingId(team.id);
         setEditForm({ ...team });
     };
 
     const handleSave = () => {
+        if (isReadOnly) return;
         if (editForm) {
             updateTeam(editForm);
             setEditingId(null);
@@ -117,6 +126,7 @@ const Teams: React.FC = () => {
     };
 
     const handleDelete = (id: string) => {
+        if (isReadOnly) return;
         if (window.confirm('Are you sure you want to delete this team?')) {
             deleteTeam(id);
         }
@@ -133,6 +143,7 @@ const Teams: React.FC = () => {
     };
 
     const handleAddSubmit = () => {
+        if (isReadOnly) return;
         if (addForm.name) {
             const newTeam: Team = {
                 id: `team-${Date.now()}`,
@@ -166,12 +177,14 @@ const Teams: React.FC = () => {
                 title={`${currentPI} Teams`}
                 description="Manage team budgets and values."
                 actions={
-                    <button
-                        onClick={() => setIsAdding(!isAdding)}
-                        className="btn btn-primary"
-                    >
-                        <Plus size={18} /> Add Team
-                    </button>
+                    !isReadOnly ? (
+                        <button
+                            onClick={() => setIsAdding(!isAdding)}
+                            className="btn btn-primary"
+                        >
+                            <Plus size={18} /> Add Team
+                        </button>
+                    ) : null
                 }
             />
 
@@ -328,14 +341,16 @@ const Teams: React.FC = () => {
                                                     {metrics.pipPlan.toLocaleString()} CHF
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
-                                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => handleEdit(team)} className="p-1.5 text-text-muted hover:text-brand-accent hover:bg-gray-50 rounded transition-colors">
-                                                            <Edit2 size={18} />
-                                                        </button>
-                                                        <button onClick={() => handleDelete(team.id)} className="p-1.5 text-text-muted hover:text-red-600 hover:bg-gray-50 rounded transition-colors">
-                                                            <Trash2 size={18} />
-                                                        </button>
-                                                    </div>
+                                                    {!isReadOnly && (
+                                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={() => handleEdit(team)} className="p-1.5 text-text-muted hover:text-brand-accent hover:bg-gray-50 rounded transition-colors">
+                                                                <Edit2 size={18} />
+                                                            </button>
+                                                            <button onClick={() => handleDelete(team.id)} className="p-1.5 text-text-muted hover:text-red-600 hover:bg-gray-50 rounded transition-colors">
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </td>
                                             </>
                                         )}

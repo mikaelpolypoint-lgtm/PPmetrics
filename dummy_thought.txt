@@ -1,0 +1,14 @@
+import { db } from "../src/lib/firebase"; // Adjust import if running via ts-node might be tricky, usually scripts stand alone
+// Actually, standard scripts in 'scripts/' usually need to initialize admin SDK if running server-side, 
+// OR simpler: just provide a guide for the Firebase Console.
+// Given strict instructions not to break things, a GUIDE is safer than a script that might require new dependencies (firebase-admin) or config.
+// However, I can provide a small React component "AdminUserSetup" that the user can temporarily uncomment to set themselves up.
+
+// Let's check 'src/lib/firebase.ts' again to see if I can easily make a "Setup Page".
+// Actually, the user asked "how do i need to setup firebase".
+// I will provide:
+// 1. Firestore Data Structure instructions.
+// 2. Firestore Security Rules (crucial).
+// 3. A helper component code (or instructions) to bootstrap their own admin user.
+
+// Better yet, I will create a Markdown file "FIREBASE_SETUP.md" in the root with strict instructions.

@@ -46,6 +46,9 @@ const PISync: React.FC = () => {
   return null;
 };
 
+import RoleGuard from './components/RoleGuard';
+import { Outlet } from 'react-router-dom';
+
 const AppRoutes: React.FC = () => {
   const defaultPI = PIS[0];
 
@@ -57,37 +60,42 @@ const AppRoutes: React.FC = () => {
         <Layout>
           <PISync />
           <Routes>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="calendar" element={<CalendarPage />} />
-            <Route path="teams" element={<Teams />} />
-            <Route path="topics" element={<Topics />} />
-            <Route path="features" element={<Features />} />
-            <Route path="jira" element={<Jira />} />
-            <Route path="burndown" element={<Burndown />} />
-            <Route path="everhour" element={<Everhour />} />
-            <Route path="everhour-capacities" element={<EverhourCapacities />} />
-            <Route path="details" element={<Details />} />
-            <Route path="metrics" element={<Metrics />} />
-            <Route path="sprint-metrics" element={<SprintMetrics />} />
-            <Route path="monatscontrolling" element={<Monatscontrolling />} />
+            {/* Routes accessible by Admin, Agile, and Developer */}
+            <Route element={<RoleGuard allowedRoles={['admin', 'agile', 'developer']}><Outlet /></RoleGuard>}>
+              <Route path="capacity-dashboard" element={<CapacityDashboard />} />
+              <Route path="capacity-availabilities" element={<CapacityAvailabilities />} />
+              {/* Tutorial might be useful for everyone? */}
+              <Route path="tutorial" element={<Tutorial />} />
+            </Route>
 
-            {/* Capacity Planning Routes */}
-            <Route path="capacity-dashboard" element={<CapacityDashboard />} />
-            <Route path="capacity-developers" element={<CapacityDevelopers />} />
-            <Route path="capacity-availabilities" element={<CapacityAvailabilities />} />
-            <Route path="capacity-details" element={<CapacityDetails />} />
-            <Route path="capacity-team-details" element={<CapacityTeamDetails />} />
-            <Route path="capacity-changes" element={<CapacityChanges />} />
+            {/* Routes accessible only by Admin and Agile */}
+            <Route element={<RoleGuard allowedRoles={['admin', 'agile']}><Outlet /></RoleGuard>}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="calendar" element={<CalendarPage />} />
+              <Route path="teams" element={<Teams />} />
+              <Route path="topics" element={<Topics />} />
+              <Route path="features" element={<Features />} />
+              <Route path="jira" element={<Jira />} />
+              <Route path="burndown" element={<Burndown />} />
+              <Route path="everhour" element={<Everhour />} />
+              <Route path="everhour-capacities" element={<EverhourCapacities />} />
+              <Route path="details" element={<Details />} />
+              <Route path="metrics" element={<Metrics />} />
+              <Route path="sprint-metrics" element={<SprintMetrics />} />
+              <Route path="monatscontrolling" element={<Monatscontrolling />} />
 
+              {/* Other Capacity Routes */}
+              <Route path="capacity-developers" element={<CapacityDevelopers />} />
+              <Route path="capacity-details" element={<CapacityDetails />} />
+              <Route path="capacity-team-details" element={<CapacityTeamDetails />} />
+              <Route path="capacity-changes" element={<CapacityChanges />} />
 
-            <Route path="master-data" element={<MasterData />} />
-
-            <Route path="capacity-planning" element={<CapacityPlanning />} />
-            <Route path="sprint-metrics-overview" element={<SprintMetricsGroup />} />
-            <Route path="pi-scope" element={<PIScope />} />
-
-            <Route path="data-storage" element={<DataStorage />} />
-            <Route path="tutorial" element={<Tutorial />} />
+              <Route path="master-data" element={<MasterData />} />
+              <Route path="capacity-planning" element={<CapacityPlanning />} />
+              <Route path="sprint-metrics-overview" element={<SprintMetricsGroup />} />
+              <Route path="pi-scope" element={<PIScope />} />
+              <Route path="data-storage" element={<DataStorage />} />
+            </Route>
 
             <Route path="*" element={<Navigate to="dashboard" replace />} />
           </Routes>
