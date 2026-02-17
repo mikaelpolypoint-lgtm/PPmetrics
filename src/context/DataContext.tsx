@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuthFull } from '../lib/auth';
 import { TEAMS_DEFAULT, PIS } from '../types';
 import type { Team, Topic, Feature, Story, EverhourEntry, SprintMetricDoc } from '../types';
 import { db } from '../lib/firebase';
@@ -61,9 +62,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [sprintMetrics, setSprintMetrics] = useState<SprintMetricDoc[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const { user, loading: authLoading } = useAuthFull();
+
     // Load data from Firestore
     useEffect(() => {
         const loadData = async () => {
+            if (authLoading || !user) {
+                // If checking auth or not logged in, request doesn't make sense (and would fail rules)
+                // We could clear data here if we wanted to be strict
+                return;
+            }
+
             setIsLoading(true);
             try {
                 // Teams
@@ -104,7 +113,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         loadData();
-    }, []);
+    }, [user, authLoading]);
 
     const addTeam = async (team: Team) => {
         setTeams(prev => [...prev, team]);
