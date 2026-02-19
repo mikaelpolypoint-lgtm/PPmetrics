@@ -211,6 +211,9 @@ const CapacityAvailabilities: React.FC = () => {
                         if (targetIndex !== -1) {
                             updatedCount++;
                             developers.forEach(dev => {
+                                // Only update devs managed by PEP (External)
+                                if (!dev.pepPlan) return;
+
                                 const csvKey = Object.keys(csvRow).find(k => {
                                     const cleanK = k.trim().toUpperCase();
                                     const devK = dev.key.toUpperCase();

@@ -13,6 +13,7 @@ export interface CapacityDeveloper {
     velocity: number; // SP per day
     pi: string;
     sprintTeams?: { [sprintName: string]: string }; // Special override team per sprint
+    pepPlan?: boolean; // If true, availabilities managed in external PEP tool
     specialCase?: boolean; // If true, excluded from sums?
 }
 

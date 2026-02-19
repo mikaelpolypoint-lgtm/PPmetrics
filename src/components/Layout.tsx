@@ -5,10 +5,10 @@ import { PIS } from '../types';
 import {
     LayoutDashboard, Users, Database, Clock, Layers, FileText,
     Activity, PieChart, ChevronDown, ChevronRight, Settings, Calendar as CalendarIcon,
-    Target
+    Target, LogOut
 } from 'lucide-react';
 import clsx from 'clsx';
-// import { useAuthFull } from '../lib/auth'; // Removed
+import { useAuthFull, signOutUser } from '../lib/auth';
 
 // Define the structure for Navigation Items
 interface NavItemProps {
@@ -21,9 +21,18 @@ interface NavItemProps {
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { currentPI } = useData();
-    // const { user } = useAuthFull(); // Removed
+    const { user } = useAuthFull();
     const navigate = useNavigate();
     const location = useLocation();
+
+    const handleLogout = async () => {
+        try {
+            await signOutUser();
+            navigate('/login');
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
+    };
 
     // Map of expanded groups. Key is the path of the parent.
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -228,6 +237,29 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <NavItemRenderer item={storageItem} />
                     <NavItemRenderer item={tutorialItem} />
 
+                    <div className="mt-auto pt-4 border-t border-gray-200">
+                        {user ? (
+                            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-sm font-medium truncate" title={user.email || ''}>
+                                        {user.email}
+                                    </span>
+                                    <span className="text-xs text-gray-500">Logged in</span>
+                                </div>
+                                <button
+                                    onClick={handleLogout}
+                                    title="Sign Out"
+                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                                >
+                                    <LogOut size={18} />
+                                </button>
+                            </div>
+                        ) : (
+                            <NavLink to="/login" className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/5 rounded-lg">
+                                <LogOut size={18} /> Sign In
+                            </NavLink>
+                        )}
+                    </div>
                 </nav>
             </aside>
 

@@ -109,11 +109,11 @@ function App() {
   return (
     <AuthProvider>
       <DataProvider>
-        <AuthGate>
-          <BrowserRouter>
+        <BrowserRouter>
+          <AuthGate>
             <AppRoutes />
-          </BrowserRouter>
-        </AuthGate>
+          </AuthGate>
+        </BrowserRouter>
       </DataProvider>
     </AuthProvider>
   );

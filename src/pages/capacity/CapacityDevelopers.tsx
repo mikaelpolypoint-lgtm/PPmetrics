@@ -84,7 +84,7 @@ const CapacityDevelopers: React.FC = () => {
             team: 'Neon', key: '', name: '', stack: 'Fullstack',
             dailyHours: 8, workRatio: 100, internalCost: 100, load: 90,
             manageRatio: 0, developRatio: 80, maintainRatio: 20, velocity: 1,
-            pi: currentPI, specialCase: false
+            pi: currentPI, specialCase: false, pepPlan: true
         };
         setDevelopers(prev => [...prev, newDev]);
     };
@@ -348,6 +348,7 @@ const CapacityDevelopers: React.FC = () => {
                                 <th className="px-4 py-3 text-left">Key</th>
                                 <th className="px-4 py-3 text-left">Name</th>
                                 <th className="px-4 py-3 text-left">Specs</th>
+                                <th className="px-4 py-3 text-left">PEP Plan</th>
                                 <th className="px-4 py-3 text-left">Hrs/Day</th>
                                 <th className="px-4 py-3 text-left">Work %</th>
                                 <th className="px-4 py-3 text-left">Cost</th>
@@ -410,6 +411,9 @@ const CapacityDevelopers: React.FC = () => {
                                         </td>
                                         <td className="px-4 py-2 text-center">
                                             <input type="checkbox" disabled={isReadOnly} checked={dev.specialCase || false} onChange={e => handleInputChange(dev.key, 'specialCase', e.target.checked)} />
+                                        </td>
+                                        <td className="px-4 py-2 text-center">
+                                            <input type="checkbox" disabled={isReadOnly} checked={dev.pepPlan ?? true} onChange={e => handleInputChange(dev.key, 'pepPlan', e.target.checked)} />
                                         </td>
                                         <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.dailyHours} onChange={e => handleInputChange(dev.key, 'dailyHours', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
                                         <td className="px-4 py-2"><input type="number" disabled={isReadOnly} value={dev.workRatio} onChange={e => handleInputChange(dev.key, 'workRatio', Number(e.target.value))} className="w-12 bg-transparent border-b border-gray-200 focus:border-blue-500 outline-none" /></td>
