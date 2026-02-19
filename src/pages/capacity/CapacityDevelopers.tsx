@@ -7,11 +7,12 @@ import Papa from 'papaparse';
 
 const TEAMS = ['Neon', 'H1', 'Zn2C', 'Tungsten', 'UI', 'TMGT', 'Admin'];
 
-import { useAuthFull } from '../../lib/auth';
+// import { useAuthFull } from '../../lib/auth'; // Removed
 
 const CapacityDevelopers: React.FC = () => {
-    const { user } = useAuthFull();
-    const isReadOnly = user?.role === 'agile';
+    // const { user } = useAuthFull(); // Removed
+    const isReadOnly = false; // Everyone has write access now
+
 
     const { currentPI } = useData();
     const [developers, setDevelopers] = useState<CapacityDeveloper[]>([]);

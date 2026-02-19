@@ -118,12 +118,7 @@ const Login: React.FC = () => {
                     </button>
                 </div>
 
-                {!isLogin && (
-                    <div className="mt-4 p-3 bg-blue-50 text-blue-700 text-xs rounded-lg text-center">
-                        New accounts default to <strong>Developer</strong> role.
-                        <br />Contact an admin for role promotion.
-                    </div>
-                )}
+
             </div>
         </div>
     );

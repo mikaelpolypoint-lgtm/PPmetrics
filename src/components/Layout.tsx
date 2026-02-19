@@ -8,7 +8,7 @@ import {
     Target
 } from 'lucide-react';
 import clsx from 'clsx';
-import { useAuthFull } from '../lib/auth';
+// import { useAuthFull } from '../lib/auth'; // Removed
 
 // Define the structure for Navigation Items
 interface NavItemProps {
@@ -21,7 +21,7 @@ interface NavItemProps {
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { currentPI } = useData();
-    const { user } = useAuthFull();
+    // const { user } = useAuthFull(); // Removed
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -39,36 +39,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         e.preventDefault();
         e.stopPropagation();
         setExpanded(prev => ({ ...prev, [path]: !prev[path] }));
-    };
-
-    // Role-based filtering
-    const isDeveloper = user?.role === 'developer';
-
-    const filterNavItems = (items: NavItemProps[]): NavItemProps[] => {
-        if (!isDeveloper) return items;
-
-        return items.map(item => {
-            // Check if this specific item is allowed
-            // We use includes because routes might have children
-            const isAllowed =
-                item.path.includes('capacity-dashboard') ||
-                item.path.includes('capacity-availabilities') ||
-                item.path.includes('tutorial');
-
-            // If it has children, filter them
-            if (item.children) {
-                const filteredChildren = filterNavItems(item.children);
-                // If it has allowed children, return it with those children
-                if (filteredChildren.length > 0) {
-                    return { ...item, children: filteredChildren };
-                }
-            }
-
-            // If it's a leaf node (no children) and allowed, return it
-            if (isAllowed) return item;
-
-            return null;
-        }).filter(Boolean) as NavItemProps[];
     };
 
     // Auto-expand if current route is a child
@@ -111,7 +81,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }, [location.pathname, currentPI]);
 
 
-    const rawNavGroups: NavItemProps[] = [
+    const navGroups: NavItemProps[] = [
         {
             path: `/${currentPI}/capacity-planning`,
             label: 'Capacity',
@@ -165,8 +135,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             ]
         }
     ];
-
-    const navGroups = filterNavItems(rawNavGroups);
 
     const tutorialItem: NavItemProps = { path: `/${currentPI}/tutorial`, label: 'Tutorial', icon: FileText };
     const storageItem: NavItemProps = { path: `/${currentPI}/data-storage`, label: 'Data Storage', icon: Database };

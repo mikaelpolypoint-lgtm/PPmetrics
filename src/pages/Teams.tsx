@@ -6,11 +6,12 @@ import { CapacityService } from '../services/CapacityService';
 import type { CapacityDeveloper, CapacityAvailability } from '../types/capacity';
 import { Edit2, Save, X, Trash2, Plus } from 'lucide-react';
 
-import { useAuthFull } from '../lib/auth';
+// import { useAuthFull } from '../lib/auth'; // Removed
 
 const Teams: React.FC = () => {
-    const { user } = useAuthFull();
-    const isReadOnly = user?.role === 'agile';
+    // const { user } = useAuthFull(); // Removed
+    const isReadOnly = false; // Everyone has write access now
+
 
     const { teams, updateTeam, addTeam, deleteTeam, currentPI, stories } = useData();
     const [editingId, setEditingId] = useState<string | null>(null);

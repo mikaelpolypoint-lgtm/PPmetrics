@@ -32,7 +32,6 @@ const Tutorial: React.FC = () => {
         }
         class Developer {
           name: string
-          Role
           Default Availability
         }
         class Availability {
