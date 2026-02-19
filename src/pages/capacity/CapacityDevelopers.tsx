@@ -5,7 +5,7 @@ import type { CapacityDeveloper } from '../../types/capacity';
 import { Plus, Save, Trash2, Download, Upload, Settings } from 'lucide-react';
 import Papa from 'papaparse';
 
-const TEAMS = ['Neon', 'H1', 'Zn2C', 'Tungsten', 'UI', 'TMGT', 'Admin'];
+// TEAMS constant replaced by dynamic teams from context
 
 // import { useAuthFull } from '../../lib/auth'; // Removed
 
@@ -14,7 +14,7 @@ const CapacityDevelopers: React.FC = () => {
     const isReadOnly = false; // Everyone has write access now
 
 
-    const { currentPI } = useData();
+    const { currentPI, teams } = useData();
     const [developers, setDevelopers] = useState<CapacityDeveloper[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterTeam, setFilterTeam] = useState('All');
@@ -26,6 +26,8 @@ const CapacityDevelopers: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalDev, setModalDev] = useState<CapacityDeveloper | null>(null);
     const [sprints, setSprints] = useState<string[]>([]);
+
+    const availableTeams = teams.map(t => t.name).sort();
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const csvInputRef = useRef<HTMLInputElement>(null);
@@ -81,7 +83,8 @@ const CapacityDevelopers: React.FC = () => {
     const addDeveloper = () => {
         if (isReadOnly) return;
         const newDev: CapacityDeveloper = {
-            team: 'Neon', key: '', name: '', stack: 'Fullstack',
+            team: availableTeams.length > 0 ? availableTeams[0] : 'Neon',
+            key: '', name: '', stack: 'Fullstack',
             dailyHours: 8, workRatio: 100, internalCost: 100, load: 90,
             manageRatio: 0, developRatio: 80, maintainRatio: 20, velocity: 1,
             pi: currentPI, specialCase: false, pepPlan: true
@@ -286,7 +289,10 @@ const CapacityDevelopers: React.FC = () => {
                             className="bg-bg-main border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-accent focus:outline-none"
                         >
                             <option value="All">All</option>
-                            {Array.from(new Set(developers.map(d => d.team).filter(Boolean))).map(t => <option key={t} value={t}>{t}</option>)}
+                            {Array.from(new Set([
+                                ...developers.map(d => d.team).filter(Boolean),
+                                ...availableTeams
+                            ])).sort().map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                     </div>
                 </div>
@@ -388,7 +394,10 @@ const CapacityDevelopers: React.FC = () => {
                                                 onChange={e => handleInputChange(dev.key, 'team', e.target.value)}
                                                 className="bg-transparent border-none focus:ring-1 p-1 w-24"
                                             >
-                                                {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
+                                                {availableTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                                                {!availableTeams.includes(dev.team) && dev.team && (
+                                                    <option value={dev.team}>{dev.team}</option>
+                                                )}
                                             </select>
                                         </td>
                                         <td className="px-4 py-2">
@@ -481,7 +490,7 @@ const CapacityDevelopers: React.FC = () => {
                                         className="border rounded px-2 py-1 text-sm bg-white"
                                     >
                                         <option value={modalDev.team}>Default ({modalDev.team})</option>
-                                        {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
+                                        {availableTeams.map(t => <option key={t} value={t}>{t}</option>)}
                                     </select>
                                 </div>
                             ))}

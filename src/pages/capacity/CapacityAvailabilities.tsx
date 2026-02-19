@@ -248,7 +248,50 @@ const CapacityAvailabilities: React.FC = () => {
         reader.readAsText(file);
     };
 
-    if (loading) return <div>Loading...</div>;
+    const handleBulkColumnUpdate = (devKey: string, value: number) => {
+        if (!confirm(`Set ${devKey} to ${value} for all ${filteredRows.length} visible dates?`)) return;
+
+        const updates = new Set<string>(); // efficient lookup
+        filteredRows.forEach(r => updates.add(r.date));
+
+        setAvailabilities(prev => prev.map(row => {
+            if (updates.has(row.date)) {
+                return { ...row, [devKey]: value };
+            }
+            return row;
+        }));
+        setIsDirty(true);
+    };
+
+    const handleBulkRowUpdate = (date: string, value: number) => {
+        // Updates all VISIBLE developers for this row
+        setAvailabilities(prev => prev.map(row => {
+            if (row.date === date) {
+                const newRow = { ...row };
+                filteredDevs.forEach(d => {
+                    newRow[d.key] = value;
+                });
+                return newRow;
+            }
+            return row;
+        }));
+        setIsDirty(true);
+    };
+
+    const nextValue = (current: number) => {
+        if (current === 1) return 0.5;
+        if (current === 0.5) return 0;
+        return 1;
+    };
+
+    // Helper for cell color
+    const getCellColor = (val: number) => {
+        if (val === 1) return 'bg-green-100 text-green-800 hover:bg-green-200';
+        if (val === 0.5) return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200';
+        return 'bg-red-100 text-red-800 hover:bg-red-200';
+    };
+
+    if (loading) return <div className="p-8 text-center text-text-muted">Loading Availabilities...</div>;
 
     return (
         <div className="space-y-6">
@@ -303,13 +346,45 @@ const CapacityAvailabilities: React.FC = () => {
                     <table className="w-full text-sm relative border-collapse">
                         <thead className="bg-gray-50 border-b border-border sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th className="px-4 py-3 text-left min-w-[100px] bg-gray-50">Date</th>
+                                <th className="px-4 py-3 text-left min-w-[120px] bg-gray-50 z-20 sticky left-0 border-r border-gray-100">
+                                    <div className="flex items-center gap-2">
+                                        Date
+                                        {/* Global row actions for visible rows? No, maybe per row is better */}
+                                    </div>
+                                </th>
                                 <th className="px-4 py-3 text-left bg-gray-50">WkDay</th>
                                 <th className="px-4 py-3 text-left bg-gray-50">KW</th>
                                 <th className="px-4 py-3 text-left bg-gray-50">Sprint</th>
-                                <th className="px-4 py-3 text-left bg-gray-50">PI</th>
+                                <th className="px-4 py-3 text-left bg-gray-50 border-r border-gray-200">PI</th>
                                 {filteredDevs.map(d => (
-                                    <th key={d.key} className="px-4 py-3 text-center bg-gray-50 min-w-[60px]" title={d.name}>{d.key}</th>
+                                    <th key={d.key} className="px-2 py-3 text-center bg-gray-50 min-w-[80px] group border-b-2 border-transparent hover:border-brand-primary/20 transition-colors">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <span className="font-bold text-gray-700" title={d.name}>{d.key}</span>
+                                            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden transform scale-90">
+                                                <button
+                                                    onClick={() => handleBulkColumnUpdate(d.key, 1)}
+                                                    className="w-6 h-6 flex items-center justify-center text-[10px] font-bold bg-green-50 text-green-700 hover:bg-green-100"
+                                                    title="Set all visible to 1"
+                                                >
+                                                    1
+                                                </button>
+                                                <button
+                                                    onClick={() => handleBulkColumnUpdate(d.key, 0.5)}
+                                                    className="w-6 h-6 flex items-center justify-center text-[10px] font-bold bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                                                    title="Set all visible to 0.5"
+                                                >
+                                                    ½
+                                                </button>
+                                                <button
+                                                    onClick={() => handleBulkColumnUpdate(d.key, 0)}
+                                                    className="w-6 h-6 flex items-center justify-center text-[10px] font-bold bg-red-50 text-red-700 hover:bg-red-100"
+                                                    title="Set all visible to 0"
+                                                >
+                                                    0
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
                                 ))}
                             </tr>
                         </thead>
@@ -329,29 +404,36 @@ const CapacityAvailabilities: React.FC = () => {
                                 const kw = 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
 
                                 return (
-                                    <tr key={row.date} className="hover:bg-gray-50">
-                                        <td className="px-4 py-2 font-medium">{new Date(row.date).toLocaleDateString('de-DE')}</td>
-                                        <td className="px-4 py-2">{weekday}</td>
-                                        <td className="px-4 py-2">{kw}</td>
-                                        <td className="px-4 py-2">{row.sprint}</td>
-                                        <td className="px-4 py-2">{row.pi}</td>
+                                    <tr key={row.date} className="hover:bg-gray-50 group/row">
+                                        <td className="px-4 py-2 font-medium sticky left-0 bg-white group-hover/row:bg-gray-50 border-r border-gray-100 z-10">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span>{new Date(row.date).toLocaleDateString('de-DE')}</span>
+                                                {/* Row Actions */}
+                                                <div className="flex gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => handleBulkRowUpdate(row.date, 0)}
+                                                        className="w-5 h-5 flex items-center justify-center rounded text-[10px] bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
+                                                        title="Mark whole day as absent (0)"
+                                                    >
+                                                        0
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-2 text-text-muted">{weekday}</td>
+                                        <td className="px-4 py-2 text-text-muted">{kw}</td>
+                                        <td className="px-4 py-2 text-text-muted">{row.sprint}</td>
+                                        <td className="px-4 py-2 text-text-muted border-r border-gray-200">{row.pi}</td>
                                         {filteredDevs.map(dev => {
                                             const val = row[dev.key] !== undefined ? Number(row[dev.key]) : 1;
-                                            let bgClass = 'bg-green-100/50';
-                                            if (val === 0) bgClass = 'bg-red-100/50';
-                                            if (val === 0.5) bgClass = 'bg-yellow-100/50';
-
                                             return (
-                                                <td key={dev.key} className={`p-0 border-l border-gray-100 ${bgClass}`}>
-                                                    <input
-                                                        type="number"
-                                                        step="0.5"
-                                                        min="0"
-                                                        max="1"
-                                                        value={val}
-                                                        onChange={(e) => handleValueChange(row.date, dev.key, Number(e.target.value))}
-                                                        className={`w-full h-full text-center bg-transparent focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-accent py-2`}
-                                                    />
+                                                <td key={dev.key} className="p-0 border-l border-gray-50">
+                                                    <button
+                                                        onClick={() => handleValueChange(row.date, dev.key, nextValue(val))}
+                                                        className={`w-full h-full min-h-[40px] flex items-center justify-center font-bold text-sm transition-colors ${getCellColor(val)}`}
+                                                    >
+                                                        {val}
+                                                    </button>
                                                 </td>
                                             );
                                         })}
